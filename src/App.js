@@ -1,7 +1,5 @@
 import React from 'react';
-import AddPlayerForm from './components/AddPlayerForm';
-import MatchForm from './components/MatchForm';
-import PlayerList from './components/PlayerList';
+
 import './index.css';
 
 function App() {
