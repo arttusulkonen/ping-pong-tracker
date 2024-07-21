@@ -1,7 +1,7 @@
 import React from 'react';
 
-import AddPlayerForm from './components/AddPlayerForm';
-import Modal from './components/Modal';
+
+import PlayerList from './components/PlayerList';
 import './index.css';
 
 function App() {
@@ -21,15 +21,9 @@ function App() {
         <h1 className='text-4xl font-bold mb-8 text-center'>
           Ping Pong Tracker
         </h1>
-        <button
-          onClick={handleOpenModal}
-          className='bg-blue-500 text-white px-4 py-2 rounded mt-4'
-        >
-          Add Player
-        </button>
-        <Modal show={showModal} onClose={handleCloseModal}>
-          <AddPlayerForm onClose={handleCloseModal} />
-        </Modal>
+        <PlayerList handleOpenModal={handleOpenModal} handleCloseModal={handleCloseModal} showModal={showModal}/>
+
+        
       </div>
     </div>
   );
