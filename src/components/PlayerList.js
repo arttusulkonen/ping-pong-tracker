@@ -1,24 +1,17 @@
-import { collection, deleteDoc, doc, getDocs } from 'firebase/firestore';
-import React, { useEffect, useState } from 'react';
-import { db } from '../firebase';
+import { deleteDoc, doc } from 'firebase/firestore';
+import React from 'react';
 import AddPlayerForm from './AddPlayerForm';
+import { db } from '../firebase';
 import Modal from './Modal';
 
-const PlayerList = ({ handleOpenModal, handleCloseModal, showModal }) => {
-  const [players, setPlayers] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  const updatePlayerList = async () => {
-    const querySnapshot = await getDocs(collection(db, 'players'));
-    let playersData = querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-    playersData.sort((a, b) => b.rating - a.rating);
-    setPlayers(playersData);
-    setLoading(false);
-  };
-
+const PlayerList = ({
+  players,
+  loading,
+  handleOpenModal,
+  handleCloseModal,
+  showModal,
+  updatePlayerList,
+}) => {
   const deletePlayer = async (id) => {
     try {
       await deleteDoc(doc(db, 'players', id));
@@ -28,10 +21,6 @@ const PlayerList = ({ handleOpenModal, handleCloseModal, showModal }) => {
       console.error('Error removing document: ', error);
     }
   };
-
-  useEffect(() => {
-    updatePlayerList();
-  }, []);
 
   return (
     <div className='flex flex-col'>

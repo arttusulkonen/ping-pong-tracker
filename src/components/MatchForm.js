@@ -1,8 +1,14 @@
-import { collection, getDocs } from 'firebase/firestore';
+import {
+  addDoc,
+  collection,
+  doc,
+  getDocs,
+  updateDoc,
+} from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { db } from '../firebase';
 
-const MatchForm = () => {
+const MatchForm = ({ updatePlayerList }) => {
   const [players, setPlayers] = useState([]);
   const [player1, setPlayer1] = useState('');
   const [player2, setPlayer2] = useState('');
@@ -23,10 +29,93 @@ const MatchForm = () => {
     fetchPlayers();
   }, []);
 
+  const calculateElo = (playerRating, opponentRating, score) => {
+    const kFactor = 32;
+    const expectedScore =
+      1 / (1 + 10 ** ((opponentRating - playerRating) / 400));
+    return Math.round(playerRating + kFactor * (score - expectedScore));
+  };
+
+  const updatePlayerRating = async (playerName, newRating) => {
+    const playerDoc = players.find((player) => player.name === playerName);
+    if (!playerDoc) {
+      console.error(`Player ${playerName} not found!`);
+      return;
+    }
+    const playerRef = doc(db, 'players', playerDoc.id);
+    await updateDoc(playerRef, {
+      rating: newRating,
+    });
+    updatePlayerList();
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const score1Value = parseInt(score1);
+    const score2Value = parseInt(score2);
+    if (isNaN(score1Value) || isNaN(score2Value)) {
+      alert('Please enter valid numbers for scores.');
+      return;
+    }
+
+    if (!winner) {
+      alert('Please select a winner.');
+      return;
+    }
+
+    try {
+      const player1Doc = players.find((player) => player.name === player1);
+      const player2Doc = players.find((player) => player.name === player2);
+
+      if (!player1Doc || !player2Doc) {
+        alert('Players not found');
+        return;
+      }
+
+      const player1Rating = player1Doc.rating || 1000;
+      const player2Rating = player2Doc.rating || 1000;
+
+      const player1Score = winner === player1 ? 1 : 0;
+      const player2Score = winner === player2 ? 1 : 0;
+
+      const newPlayer1Rating = calculateElo(
+        player1Rating,
+        player2Rating,
+        player1Score
+      );
+      const newPlayer2Rating = calculateElo(
+        player2Rating,
+        player1Rating,
+        player2Score
+      );
+
+      await addDoc(collection(db, 'matches'), {
+        player1,
+        player2,
+        score1: score1Value,
+        score2: score2Value,
+        winner,
+        timestamp: new Date(),
+      });
+
+      await updatePlayerRating(player1, newPlayer1Rating);
+      await updatePlayerRating(player2, newPlayer2Rating);
+
+      setPlayer1('');
+      setPlayer2('');
+      setScore1('');
+      setScore2('');
+      setWinner('');
+    } catch (error) {
+      console.error('Error adding document: ', error);
+    }
+  };
+
   return (
-    <div className='block -m-1.5 overflow-x-auto rounded-lg bg-surface-dark shadow-4'>
+    <div className='block -m-1.5 overflow-x-auto rounded-lg bg-surface-dark shadow-4 p-6'>
       <h2 className='text-xl font-bold mb-4'>Add Match</h2>
-      <form>
+      <form onSubmit={handleSubmit}>
         <div className='mb-4'>
           <label className='block text-sm font-bold mb-2' htmlFor='player1'>
             Player 1
