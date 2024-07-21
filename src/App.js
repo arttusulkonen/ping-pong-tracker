@@ -1,8 +1,6 @@
 import React from 'react';
-
-
+import MatchForm from './components/MatchForm';
 import PlayerList from './components/PlayerList';
-import './index.css';
 
 function App() {
   const [showModal, setShowModal] = React.useState(false);
@@ -21,9 +19,14 @@ function App() {
         <h1 className='text-4xl font-bold mb-8 text-center'>
           Ping Pong Tracker
         </h1>
-        <PlayerList handleOpenModal={handleOpenModal} handleCloseModal={handleCloseModal} showModal={showModal}/>
-
-        
+        <div className='flex flex-col md:flex-row justify-between gap-24'>
+          <PlayerList
+            handleOpenModal={handleOpenModal}
+            handleCloseModal={handleCloseModal}
+            showModal={showModal}
+          />
+          <MatchForm />
+        </div>
       </div>
     </div>
   );

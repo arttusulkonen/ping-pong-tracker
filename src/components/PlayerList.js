@@ -122,7 +122,7 @@ const PlayerList = ({ handleOpenModal, handleCloseModal, showModal }) => {
           </div>
           <button
             onClick={handleOpenModal}
-            className='bg-blue-500 hover:bg-blue-400 text-white font-bold py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 disabled:opacity-50 disabled:pointer-events-none'
+            className='bg-blue-500 hover:bg-blue-400 text-white font-bold py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 disabled:opacity-50 disabled:pointer-events-none mt-4'
             aria-label='Add Player'
           >
             Add Player
