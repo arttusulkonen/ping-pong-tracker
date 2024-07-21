@@ -1,6 +1,5 @@
-import { collection, deleteDoc, doc, getDocs } from 'firebase/firestore';
+import { collection, getDocs } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { db } from '../firebase';
 import AddPlayerForm from './AddPlayerForm';
 import Modal from './Modal';
