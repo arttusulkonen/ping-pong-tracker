@@ -1,10 +1,10 @@
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDocs } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { db } from '../firebase';
 import AddPlayerForm from './AddPlayerForm';
 import Modal from './Modal';
 
-const PlayerList = ({handleOpenModal, handleCloseModal, showModal}) => {
+const PlayerList = ({ handleOpenModal, handleCloseModal, showModal }) => {
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -17,7 +17,17 @@ const PlayerList = ({handleOpenModal, handleCloseModal, showModal}) => {
     playersData.sort((a, b) => b.rating - a.rating);
     setPlayers(playersData);
     setLoading(false);
-  }
+  };
+
+  const deletePlayer = async (id) => {
+    try {
+      await deleteDoc(doc(db, 'players', id));
+      console.log(`Document with ID ${id} deleted`);
+      updatePlayerList();
+    } catch (error) {
+      console.error('Error removing document: ', error);
+    }
+  };
 
   useEffect(() => {
     updatePlayerList();
@@ -85,7 +95,10 @@ const PlayerList = ({handleOpenModal, handleCloseModal, showModal}) => {
                         {player.rating}
                       </td>
                       <td className='px-6 py-4 whitespace-nowrap text-end text-sm font-medium'>
-                        <button className='inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg border bg-red-600 py-2 px-4 text-white hover:bg-red-800 disabled:opacity-50 disabled:pointer-events-none'>
+                        <button
+                          onClick={() => deletePlayer(player.id)}
+                          className='inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg border bg-red-600 py-2 px-4 text-white hover:bg-red-800 disabled:opacity-50 disabled:pointer-events-none'
+                        >
                           <svg
                             xmlns='http://www.w3.org/2000/svg'
                             className='h-5 w-5'
@@ -108,16 +121,19 @@ const PlayerList = ({handleOpenModal, handleCloseModal, showModal}) => {
             </div>
           </div>
           <button
-          onClick={handleOpenModal}
-          className='bg-blue-500 hover:bg-blue-400 text-white font-bold py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 disabled:opacity-50 disabled:pointer-events-none'
-          aria-label='Add Player'
-        >
-          Add Player
-        </button>
+            onClick={handleOpenModal}
+            className='bg-blue-500 hover:bg-blue-400 text-white font-bold py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 disabled:opacity-50 disabled:pointer-events-none'
+            aria-label='Add Player'
+          >
+            Add Player
+          </button>
 
-        <Modal show={showModal} onClose={handleCloseModal}>
-          <AddPlayerForm onClose={handleCloseModal} updatePlayerList={updatePlayerList}/>
-        </Modal>
+          <Modal show={showModal} onClose={handleCloseModal}>
+            <AddPlayerForm
+              onClose={handleCloseModal}
+              updatePlayerList={updatePlayerList}
+            />
+          </Modal>
         </div>
       )}
     </div>

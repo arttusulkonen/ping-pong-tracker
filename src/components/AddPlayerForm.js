@@ -9,7 +9,7 @@ const AddPlayerForm = ({ onClose, updatePlayerList }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+    
     if (!name) {
       return;
     }
@@ -18,7 +18,6 @@ const AddPlayerForm = ({ onClose, updatePlayerList }) => {
       await addDoc(collection(db, 'players'), {
         name: name,
         rating: 1000,
-        id: Math.random().toString(36).substring(7),
       });
       setName('');
       onClose();
