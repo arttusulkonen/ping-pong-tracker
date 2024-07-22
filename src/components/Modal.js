@@ -7,8 +7,8 @@ const Modal = ({ show, onClose, children  }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-      <div className="bg-white p-4 rounded-lg shadow-lg w-full md:w-auto relative">
-        <button className="absolute top-0 right-0 m-4 text-black" onClick={onClose}>
+      <div className="font-sports uppercase bg-white text-black border-t-1 border-l-1 border-b-4 border-r-4 border-black mx-4 px-4 py-2 active:border-b-0 active:border-r-0 active:border-t-4 active:border-l-4 selectable">
+        <button className="font-sports uppercase bg-white text-black border-t-1 border-l-1 border-b-4 border-r-4 border-black mx-4 px-4 py-2 active:border-b-0 active:border-r-0 active:border-t-4 active:border-l-4 selectable" onClick={onClose}>
           &times;
         </button>
         {children}

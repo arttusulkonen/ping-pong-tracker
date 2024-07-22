@@ -1,7 +1,7 @@
 import { deleteDoc, doc } from 'firebase/firestore';
 import React from 'react';
-import AddPlayerForm from './AddPlayerForm';
 import { db } from '../firebase';
+import AddPlayerForm from './AddPlayerForm';
 import Modal from './Modal';
 
 const PlayerList = ({
@@ -84,24 +84,26 @@ const PlayerList = ({
                         {player.rating}
                       </td>
                       <td className='px-6 py-4 whitespace-nowrap text-end text-sm font-medium'>
-                        <button
-                          onClick={() => deletePlayer(player.id)}
-                          className='inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg border bg-red-600 py-2 px-4 text-white hover:bg-red-800 disabled:opacity-50 disabled:pointer-events-none'
-                        >
-                          <svg
-                            xmlns='http://www.w3.org/2000/svg'
-                            className='h-5 w-5'
-                            viewBox='0 0 20 20'
-                            fill='currentColor'
+                        <div className='col-start-1 col-span-full font-medium tracking-wider text-lg md:text-2xl flex justify-center mt-8'>
+                          <button
+                            onClick={() => deletePlayer(player.id)}
+                            className='font-sports uppercase bg-white text-black border-t-1 border-l-1 border-b-4 border-r-4 border-black mx-4 px-4 py-2 active:border-b-0 active:border-r-0 active:border-t-4 active:border-l-4 selectable'
                           >
-                            <path
-                              fillRule='evenodd'
-                              d='M6 2a1 1 0 00-.894.553L4 4H2a1 1 0 100 2h1.46l.52 9.25a2 2 0 001.995 1.75h8.05a2 2 0 001.995-1.75L16.54 6H18a1 1 0 100-2h-2l-1.106-1.447A1 1 0 0014 2H6zM6.2 4l.8 1h6l.8-1H6.2zM5.46 6h9.08l-.52 9.25a1 1 0 01-.998.75H6.978a1 1 0 01-.998-.75L5.46 6z'
-                              clipRule='evenodd'
-                            />
-                          </svg>
-                          Delete
-                        </button>
+                            <svg
+                              xmlns='http://www.w3.org/2000/svg'
+                              className='h-5 w-5'
+                              viewBox='0 0 20 20'
+                              fill='currentColor'
+                            >
+                              <path
+                                fillRule='evenodd'
+                                d='M6 2a1 1 0 00-.894.553L4 4H2a1 1 0 100 2h1.46l.52 9.25a2 2 0 001.995 1.75h8.05a2 2 0 001.995-1.75L16.54 6H18a1 1 0 100-2h-2l-1.106-1.447A1 1 0 0014 2H6zM6.2 4l.8 1h6l.8-1H6.2zM5.46 6h9.08l-.52 9.25a1 1 0 01-.998.75H6.978a1 1 0 01-.998-.75L5.46 6z'
+                                clipRule='evenodd'
+                              />
+                            </svg>
+                            Delete
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -109,13 +111,15 @@ const PlayerList = ({
               </table>
             </div>
           </div>
-          <button
-            onClick={handleOpenModal}
-            className='bg-blue-500 hover:bg-blue-400 text-white font-bold py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 disabled:opacity-50 disabled:pointer-events-none mt-4'
-            aria-label='Add Player'
-          >
-            Add Player
-          </button>
+          <div className='col-start-1 col-span-full font-medium tracking-wider text-lg md:text-2xl flex justify-center mt-8'>
+            <button
+              onClick={handleOpenModal}
+              className='font-sports uppercase bg-white text-black border-t-1 border-l-1 border-b-4 border-r-4 border-black mx-4 px-4 py-2 active:border-b-0 active:border-r-0 active:border-t-4 active:border-l-4 selectable'
+              aria-label='Add Player'
+            >
+              Add Player
+            </button>
+          </div>
 
           <Modal show={showModal} onClose={handleCloseModal}>
             <AddPlayerForm

@@ -1,7 +1,10 @@
 import { collection, getDocs } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
+import { Route, Routes } from 'react-router-dom';
 import MatchForm from './components/MatchForm';
 import PlayerList from './components/PlayerList';
+import Login from './components/registration/Login';
+import Register from './components/registration/Register';
 import { db } from './firebase';
 
 function App() {
@@ -35,8 +38,13 @@ function App() {
   return (
     <div className='min-h-screen flex flex-col items-center justify-center '>
       <div className='max-w-screen-xl w-full px-4'>
-        <h1 className='text-4xl font-bold mb-8 text-center'>Ping Pong Tracker</h1>
-        <div className='flex flex-col md:flex-row justify-between gap-4'>
+        <h1 className='text-4xl font-bold mb-8 text-center'>
+          Ping Pong Tracker
+        </h1>
+        <Routes>
+          <Route path='/login' element={<Login />} />
+          <Route path='/register' element={<Register />} />
+          {/* <div className='flex flex-col md:flex-row justify-between gap-4'>
           <PlayerList
             players={players}
             loading={loading}
@@ -46,7 +54,8 @@ function App() {
             updatePlayerList={updatePlayerList}
           />
           <MatchForm updatePlayerList={updatePlayerList} />
-        </div>
+        </div> */}
+        </Routes>
       </div>
     </div>
   );

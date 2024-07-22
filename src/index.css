@@ -2,13 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Импорт шрифта */
 @font-face {
   font-family: 'Sports World';
   src: url('./fonts/Sports-World-Regular.ttf') format('truetype'); 
 }
 
-/* Применение шрифта к телу */
 body {
   @apply bg-blue-700 text-white;
   font-family: 'Sports World', sans-serif;

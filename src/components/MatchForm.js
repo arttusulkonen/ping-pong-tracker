@@ -183,12 +183,14 @@ const MatchForm = ({ updatePlayerList }) => {
             {player2 && <option value={player2}>{player2}</option>}
           </select>
         </div>
-        <button
-          type='submit'
-          className='bg-blue-500 text-white px-4 py-2 rounded w-full mt-4'
-        >
-          Submit Match
-        </button>
+        <div className='col-start-1 col-span-full font-medium tracking-wider text-lg md:text-2xl flex justify-center mt-8'>
+          <button
+            type='submit'
+            className='font-sports uppercase bg-white text-black border-t-1 border-l-1 border-b-4 border-r-4 border-black mx-4 px-4 py-2 active:border-b-0 active:border-r-0 active:border-t-4 active:border-l-4 selectable'
+          >
+            Submit Match
+          </button>
+        </div>
       </form>
     </div>
   );
