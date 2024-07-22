@@ -1,8 +1,7 @@
 import { deleteDoc, doc } from 'firebase/firestore';
 import React from 'react';
 import { db } from '../firebase';
-import AddPlayerForm from './AddPlayerForm';
-import Modal from './Modal';
+
 
 const PlayerList = ({
   players,
@@ -111,22 +110,6 @@ const PlayerList = ({
               </table>
             </div>
           </div>
-          <div className='col-start-1 col-span-full font-medium tracking-wider text-lg md:text-2xl flex justify-center mt-8'>
-            <button
-              onClick={handleOpenModal}
-              className='font-sports uppercase bg-white text-black border-t-1 border-l-1 border-b-4 border-r-4 border-black mx-4 px-4 py-2 active:border-b-0 active:border-r-0 active:border-t-4 active:border-l-4 selectable'
-              aria-label='Add Player'
-            >
-              Add Player
-            </button>
-          </div>
-
-          <Modal show={showModal} onClose={handleCloseModal}>
-            <AddPlayerForm
-              onClose={handleCloseModal}
-              updatePlayerList={updatePlayerList}
-            />
-          </Modal>
         </div>
       )}
     </div>

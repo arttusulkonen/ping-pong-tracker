@@ -44,17 +44,6 @@ function App() {
         <Routes>
           <Route path='/login' element={<Login />} />
           <Route path='/register' element={<Register />} />
-          {/* <div className='flex flex-col md:flex-row justify-between gap-4'>
-          <PlayerList
-            players={players}
-            loading={loading}
-            handleOpenModal={handleOpenModal}
-            handleCloseModal={handleCloseModal}
-            showModal={showModal}
-            updatePlayerList={updatePlayerList}
-          />
-          <MatchForm updatePlayerList={updatePlayerList} />
-        </div> */}
         </Routes>
       </div>
     </div>
