@@ -11,7 +11,7 @@ import { auth, db } from './firebase';
 function App() {
   const [showModal, setShowModal] = useState(false);
   const [rooms, setRooms] = useState([]);
-  const [loading, setLoading] = useState(true);
+
   const [currentUser, setCurrentUser] = useState(null);
 
   const handleOpenModal = () => {
@@ -30,7 +30,6 @@ function App() {
       ...doc.data(),
     }));
     setRooms(roomsData);
-    setLoading(false);
   };
 
   // const updatePlayerList = async () => {
