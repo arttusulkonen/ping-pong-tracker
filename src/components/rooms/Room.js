@@ -34,7 +34,6 @@ const Room = () => {
       const roomDoc = await getDoc(doc(db, 'rooms', roomId));
       if (roomDoc.exists()) {
         const data = roomDoc.data();
-        setRoomData(data);
         setMembers(data.members || []);
         setLoading(false);
       } else {
