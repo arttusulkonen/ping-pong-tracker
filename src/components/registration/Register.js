@@ -1,3 +1,4 @@
+import { updateProfile } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -18,11 +19,17 @@ const Register = () => {
         password
       );
       const user = userCredential.user;
+      
+      await updateProfile(user, {
+        displayName: nickname,
+      });
+
       await setDoc(doc(db, 'users', user.uid), {
         email: user.email,
         nickname: nickname,
         rating: 1000,
       });
+
       alert('Registration successful!');
       navigate('/');
     } catch (error) {

@@ -1,16 +1,18 @@
 import { collection, getDocs } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { Route, Routes } from 'react-router-dom';
-import MatchForm from './components/MatchForm';
-import PlayerList from './components/PlayerList';
 import Login from './components/registration/Login';
 import Register from './components/registration/Register';
-import { db } from './firebase';
+import CreateRoom from './components/rooms/CreateRoom';
+import Room from './components/rooms/Room';
+import RoomList from './components/rooms/RoomList';
+import { auth, db } from './firebase';
 
 function App() {
   const [showModal, setShowModal] = useState(false);
-  const [players, setPlayers] = useState([]);
+  const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState(null);
 
   const handleOpenModal = () => {
     setShowModal(true);
@@ -20,30 +22,63 @@ function App() {
     setShowModal(false);
   };
 
-  const updatePlayerList = async () => {
-    const querySnapshot = await getDocs(collection(db, 'players'));
-    let playersData = querySnapshot.docs.map((doc) => ({
+  // get rooms from firestore
+  const updateRoomList = async () => {
+    const querySnapshot = await getDocs(collection(db, 'rooms'));
+    let roomsData = querySnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     }));
-    playersData.sort((a, b) => b.rating - a.rating);
-    setPlayers(playersData);
+    setRooms(roomsData);
     setLoading(false);
   };
 
+  // const updatePlayerList = async () => {
+  //   const querySnapshot = await getDocs(collection(db, 'players'));
+  //   let playersData = querySnapshot.docs.map((doc) => ({
+  //     id: doc.id,
+  //     ...doc.data(),
+  //   }));
+  //   playersData.sort((a, b) => b.rating - a.rating);
+  //   setPlayers(playersData);
+  //   setLoading(false);
+  // };
+
   useEffect(() => {
-    updatePlayerList();
+    // updatePlayerList();
+    updateRoomList();
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setCurrentUser(user);
+    });
+    return () => unsubscribe();
   }, []);
 
   return (
     <div className='min-h-screen flex flex-col items-center justify-center '>
       <div className='max-w-screen-xl w-full px-4'>
-        <h1 className='text-4xl font-bold mb-8 text-center'>
-          Ping Pong Tracker
-        </h1>
         <Routes>
+          <Route
+            path='/'
+            element={
+              <div className='flex flex-col md:flex-row'>
+                <div className='w-full md:w-1/2 p-2'>
+                  <CreateRoom
+                    showModal={showModal}
+                    handleOpenModal={handleOpenModal}
+                    handleCloseModal={handleCloseModal}
+                    currentUser={currentUser}
+                  />
+                </div>
+                <div className='w-full md:w-1/2 p-2'>
+                  <RoomList rooms={rooms} />
+                </div>
+              </div>
+            }
+          />
           <Route path='/login' element={<Login />} />
           <Route path='/register' element={<Register />} />
+          <Route path='/create-room' element={<CreateRoom />} />
+          <Route path='/rooms/:roomId' element={<Room />} />
         </Routes>
       </div>
     </div>

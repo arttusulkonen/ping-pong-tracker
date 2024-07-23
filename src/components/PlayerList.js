@@ -6,9 +6,6 @@ import { db } from '../firebase';
 const PlayerList = ({
   players,
   loading,
-  handleOpenModal,
-  handleCloseModal,
-  showModal,
   updatePlayerList,
 }) => {
   const deletePlayer = async (id) => {
