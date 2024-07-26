@@ -11,6 +11,7 @@ import { auth, db } from './firebase';
 function App() {
   const [showModal, setShowModal] = useState(false);
   const [rooms, setRooms] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const [currentUser, setCurrentUser] = useState(null);
 
@@ -30,6 +31,7 @@ function App() {
       ...doc.data(),
     }));
     setRooms(roomsData);
+    setLoading(false);
   };
 
   // const updatePlayerList = async () => {
@@ -53,34 +55,34 @@ function App() {
   }, []);
 
   return (
-    <div className='min-h-screen flex flex-col items-center justify-center '>
-      <div className='max-w-screen-xl w-full px-4'>
-        <Routes>
-          <Route
-            path='/'
-            element={
-              <div className='flex flex-col md:flex-row'>
-                <div className='w-full md:w-1/2 p-2'>
-                  <CreateRoom
-                    showModal={showModal}
-                    handleOpenModal={handleOpenModal}
-                    handleCloseModal={handleCloseModal}
-                    currentUser={currentUser}
-                  />
-                </div>
-                <div className='w-full md:w-1/2 p-2'>
-                  <RoomList rooms={rooms} />
-                </div>
+    <div className='min-h-screen flex flex-col items-center'>
+    <div className='max-w-screen-xl w-full px-4 py-8'>
+      <Routes>
+        <Route
+          path='/'
+          element={
+            <div className='flex flex-col items-center space-y-4'>
+              <div className='w-full rounded-lg p-4'>
+                <CreateRoom
+                  showModal={showModal}
+                  handleOpenModal={handleOpenModal}
+                  handleCloseModal={handleCloseModal}
+                  currentUser={currentUser}
+                />
               </div>
-            }
-          />
-          <Route path='/login' element={<Login />} />
-          <Route path='/register' element={<Register />} />
-          <Route path='/create-room' element={<CreateRoom />} />
-          <Route path='/rooms/:roomId' element={<Room />} />
-        </Routes>
-      </div>
+              <div className='w-full bg-white shadow-lg rounded-lg p-4'>
+                <RoomList rooms={rooms} loading={loading}/>
+              </div>
+            </div>
+          }
+        />
+        <Route path='/login' element={<Login />} />
+        <Route path='/register' element={<Register />} />
+        <Route path='/create-room' element={<CreateRoom />} />
+        <Route path='/rooms/:roomId' element={<Room />} />
+      </Routes>
     </div>
+  </div>
   );
 }
 

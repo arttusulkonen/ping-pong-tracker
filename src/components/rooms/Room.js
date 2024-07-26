@@ -1,20 +1,36 @@
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import {
+  arrayUnion,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  updateDoc,
+  where,
+} from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { db } from '../../firebase';
+import { auth, db } from '../../firebase';
+import PlayerList from '../PlayerList';
 
 const Room = () => {
   const { roomId } = useParams();
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState('');
+  const [role, setRole] = useState('viewer');
+  const [memberEmail, setMemberEmail] = useState('');
+  const [room, setRoom] = useState({ name: 'Loading...' }); // Default room name
 
   const deletePlayer = async (userId) => {
     try {
       // get the room document
       const roomDoc = await getDoc(doc(db, 'rooms', roomId));
       if (roomDoc.exists()) {
-        const data = roomDoc.data(); 
-        const updatedMembers = data.members.filter((member) => member.userId !== userId);
+        const data = roomDoc.data();
+        const updatedMembers = data.members.filter(
+          (member) => member.userId !== userId
+        );
 
         // update the room document with the new members list
         await updateDoc(doc(db, 'rooms', roomId), {
@@ -29,12 +45,49 @@ const Room = () => {
     }
   };
 
+  const handleInvite = async (email) => {
+    const usersCollection = collection(db, 'users');
+
+    const userSnapshot = await getDocs(
+      query(usersCollection, where('email', '==', memberEmail))
+    );
+    const user = userSnapshot.docs[0];
+
+    if (user) {
+      const userData = user.data();
+      const updatedMembers = [
+        ...room.members,
+        {
+          userId: user.id,
+          name: userData.name,
+          email: userData.email,
+          rating: 1000,
+          role,
+        },
+      ];
+      await updateDoc(doc(db, 'rooms', roomId), { members: updatedMembers });
+      await updateDoc(doc(db, 'users', user.id), { rooms: arrayUnion(roomId) });
+      setRoom({ ...room, members: updatedMembers });
+      setMembers([...members, { id: user.id, ...userData }]);
+      alert('User invited successfully!');
+    } else {
+      alert('User not found.');
+    }
+  };
+
   useEffect(() => {
     const fetchRoomData = async () => {
       const roomDoc = await getDoc(doc(db, 'rooms', roomId));
       if (roomDoc.exists()) {
         const data = roomDoc.data();
+        setRoom(data);
         setMembers(data.members || []);
+        const currentUser = auth.currentUser;
+        if (currentUser) {
+          if (data.creator === currentUser.uid) {
+            setUserRole('admin');
+          }
+        }
         setLoading(false);
       } else {
         console.error('No such room!');
@@ -46,92 +99,42 @@ const Room = () => {
 
   return (
     <div className='flex flex-col'>
-      <div className='-m-1.5 overflow-x-auto'>
-        <div className='p-1.5 min-w-full inline-block align-middle'>
-          <div className='overflow-hidden'>
-            <table className='min-w-full divide-y divide-gray-200'>
-              <thead>
-                <tr>
-                  <th
-                    scope='col'
-                    className='px-6 py-3 text-start text-xs font-medium text-white uppercase'
-                  >
-                    Name
-                  </th>
-                  <th
-                    scope='col'
-                    className='px-6 py-3 text-start text-xs font-medium text-white uppercase'
-                  >
-                    Rating
-                  </th>
-                  <th
-                    scope='col'
-                    className='px-6 py-3 text-end text-xs font-medium text-white uppercase'
-                  >
-                    Action
-                  </th>
-                </tr>
-              </thead>
-              <tbody className='divide-y divide-gray-200'>
-                {loading ? (
-                  <div className='flex h-64 mt-4'>
-                    <svg
-                      className='animate-spin h-10 w-10 text-white'
-                      xmlns='http://www.w3.org/2000/svg'
-                      fill='none'
-                      viewBox='0 0 24 24'
-                    >
-                      <circle
-                        className='opacity-25'
-                        cx='12'
-                        cy='12'
-                        r='10'
-                        stroke='currentColor'
-                        strokeWidth='4'
-                      ></circle>
-                      <path
-                        className='opacity-75'
-                        fill='currentColor'
-                        d='M4 12a8 8 0 018-8v8h8a8 8 0 11-16 0z'
-                      ></path>
-                    </svg>
-                  </div>
-                ) : (
-                  members.map((player) => (
-                    <tr key={player.userId}>
-                      <td className='px-6 py-4 whitespace-nowrap text-sm font-medium text-white'>
-                        {player.name}
-                      </td>
-                      <td className='px-6 py-4 whitespace-nowrap text-sm text-white'>
-                        {player.rating}
-                      </td>
-                      <td className='px-6 py-4 whitespace-nowrap text-end text-sm font-medium'>
-                        <button
-                          onClick={() => deletePlayer(player.userId)}
-                          className='inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg border bg-red-600 py-2 px-4 text-white hover:bg-red-800 disabled:opacity-50 disabled:pointer-events-none'
-                        >
-                          <svg
-                            xmlns='http://www.w3.org/2000/svg'
-                            className='h-5 w-5'
-                            viewBox='0 0 20 20'
-                            fill='currentColor'
-                          >
-                            <path
-                              fillRule='evenodd'
-                              d='M6 2a1 1 0 00-.894.553L4 4H2a1 1 0 100 2h1.46l.52 9.25a2 2 0 001.995 1.75h8.05a2 2 0 001.995-1.75L16.54 6H18a1 1 0 100-2h-2l-1.106-1.447A1 1 0 0014 2H6zM6.2 4l.8 1h6l.8-1H6.2zM5.46 6h9.08l-.52 9.25a1 1 0 01-.998.75H6.978a1 1 0 01-.998-.75L5.46 6z'
-                              clipRule='evenodd'
-                            />
-                          </svg>
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+      <h2 className='text-2xl font-bold mb-4'>{room.name}</h2>
+      <div className='flex flex-col md:flex-row md:space-x-4'>
+        <div className={`md:w-${userRole === 'admin' || userRole === 'editor' ? '3/5' : 'full'} w-full`}>
+          <PlayerList
+            players={members}
+            loading={loading}
+            userRole={userRole}
+          />
         </div>
+        {(userRole === 'admin' || userRole === 'editor') && (
+          <div className='md:w-2/5 w-full mt-4 md:mt-0'>
+            <div className='space-y-4'>
+              <input
+                type='email'
+                value={memberEmail}
+                onChange={(e) => setMemberEmail(e.target.value)}
+                placeholder='User Email'
+                className='w-full font-sports uppercase bg-white text-black border-t-1 border-l-1 border-b-4 border-r-4 border-black px-4 py-2 selectable'
+              />
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                className='w-full font-sports uppercase bg-white text-black border-t-1 border-l-1 border-b-4 border-r-4 border-black px-4 py-2 selectable'
+              >
+                <option value='viewer'>Player</option>
+                <option value='editor'>Editor</option>
+              </select>
+              <button
+                onClick={handleInvite}
+                className='w-full font-sports uppercase bg-blue-500 text-white border-t-1 border-l-1 border-b-4 border-r-4 border-black px-4 py-2 active:border-b-0 active:border-r-0 active:border-t-4 active:border-l-4 selectable'
+              >
+                Invite User
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

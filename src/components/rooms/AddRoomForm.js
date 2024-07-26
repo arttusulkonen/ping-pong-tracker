@@ -98,7 +98,7 @@ const AddRoomForm = ({ currentUser, onClose }) => {
         }}
       >
         <div className='mb-4'>
-          <label className='block text-sm font-bold mb-2' htmlFor='roomName'>
+          <label className='block text-sm font-bold mb-2 text-gray-700' htmlFor='roomName'>
             Room name
           </label>
           <input
@@ -115,7 +115,7 @@ const AddRoomForm = ({ currentUser, onClose }) => {
         <button
           type='submit'
           className='bg-blue-500 hover:bg-blue-400 text-white font-bold py-2 px-4 mt-4 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 disabled:opacity-50 disabled:pointer-events-none'
-          aria-label='Add Player'
+          aria-label='Create room'
         >
           Create room
         </button>
