@@ -14,8 +14,7 @@ import { db } from '../../firebase';
 const AddRoomForm = ({ currentUser, onClose }) => {
   const [roomName, setRoomName] = useState('');
   const navigate = useNavigate();
-  
-  
+
   const handleCreateRoom = async () => {
     if (!roomName) {
       alert('Room name is required');
@@ -24,7 +23,7 @@ const AddRoomForm = ({ currentUser, onClose }) => {
 
     // get current user. we need this to assign the room to the user as a creator
     const user = currentUser;
-    
+
     if (!user) {
       alert('You must be logged in to create a room');
       return;
@@ -51,12 +50,10 @@ const AddRoomForm = ({ currentUser, onClose }) => {
         const memberData = {
           userId: user.uid,
           email: userData.email,
-          name: userData.nickname,
+          name: userData.name,
           role: 'admin',
           rating: 1000,
         };
-
-        console.log(memberData);
 
         // adding current user to the list of players in the room
         await updateDoc(doc(db, 'rooms', roomRef.id), {
@@ -98,7 +95,10 @@ const AddRoomForm = ({ currentUser, onClose }) => {
         }}
       >
         <div className='mb-4'>
-          <label className='block text-sm font-bold mb-2 text-gray-700' htmlFor='roomName'>
+          <label
+            className='block text-sm font-bold mb-2 text-gray-700'
+            htmlFor='roomName'
+          >
             Room name
           </label>
           <input

@@ -1,19 +1,39 @@
-import { deleteDoc, doc } from 'firebase/firestore';
-import React from 'react';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import React, { useEffect, useState } from 'react';
 import { db } from '../firebase';
 
-const PlayerList = ({ players, loading, userRole }) => {
-  const deletePlayer = async (id) => {
+const PlayerList = ({ players, loading, userRole, roomId }) => {
+  const [members, setMembers] = useState([]);
+
+  useEffect(() => {
+    setMembers(players);
+  }, [players]);
+
+  const deletePlayer = async (userId) => {
     try {
-      await deleteDoc(doc(db, 'players', id));
-      console.log(`Document with ID ${id} deleted`);
+      const roomDoc = await getDoc(doc(db, 'rooms', roomId));
+      if (roomDoc.exists()) {
+        const data = roomDoc.data();
+        const updatedMembers = data.members.filter(
+          (member) => member.userId !== userId
+        );
+
+        await updateDoc(doc(db, 'rooms', roomId), {
+          members: updatedMembers,
+        });
+
+        setMembers(updatedMembers);
+      }
     } catch (error) {
       console.error('Error removing document: ', error);
     }
   };
 
+  // Filter and sort players by rating
+  const sortedPlayers = [...members].sort((a, b) => b.rating - a.rating);
+
   return (
-    <div className='flex flex-col'>
+    <div className='flex flex-col mt-12'>
       <div className='-m-1.5 overflow-x-auto'>
         <div className='p-1.5 min-w-full inline-block align-middle'>
           <div className='overflow-hidden shadow-md rounded-lg'>
@@ -30,7 +50,7 @@ const PlayerList = ({ players, loading, userRole }) => {
                     scope='col'
                     className='py-3 px-6 text-left text-xs font-medium text-white uppercase tracking-wider'
                   >
-                    Rank
+                    Points
                   </th>
                   {(userRole === 'admin' || userRole === 'editor') && (
                     <th
@@ -52,7 +72,7 @@ const PlayerList = ({ players, loading, userRole }) => {
                       Loading players...
                     </td>
                   </tr>
-                ) : players.length === 0 ? (
+                ) : sortedPlayers.length === 0 ? (
                   <tr>
                     <td
                       colSpan={3}
@@ -62,8 +82,8 @@ const PlayerList = ({ players, loading, userRole }) => {
                     </td>
                   </tr>
                 ) : (
-                  players.map((player) => (
-                    <tr key={player.id}>
+                  sortedPlayers.map((player) => (
+                    <tr key={player.userId}>
                       <td className='py-4 px-6 text-sm font-medium text-white whitespace-nowrap'>
                         {player.name}
                       </td>
@@ -73,7 +93,7 @@ const PlayerList = ({ players, loading, userRole }) => {
                       {(userRole === 'admin' || userRole === 'editor') && (
                         <td className='py-4 px-6 flex justify-end text-sm font-medium whitespace-nowrap'>
                           <button
-                            onClick={() => deletePlayer(player.id)}
+                            onClick={() => deletePlayer(player.userId)}
                             className='flex items-center justify-end bg-gray-100 text-gray-800 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 transition duration-200 ease-in-out rounded px-2 py-1'
                           >
                             <svg

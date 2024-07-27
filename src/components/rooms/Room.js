@@ -11,6 +11,7 @@ import {
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { auth, db } from '../../firebase';
+import MatchForm from '../MatchForm';
 import PlayerList from '../PlayerList';
 
 const Room = () => {
@@ -22,30 +23,7 @@ const Room = () => {
   const [memberEmail, setMemberEmail] = useState('');
   const [room, setRoom] = useState({ name: 'Loading...' }); // Default room name
 
-  const deletePlayer = async (userId) => {
-    try {
-      // get the room document
-      const roomDoc = await getDoc(doc(db, 'rooms', roomId));
-      if (roomDoc.exists()) {
-        const data = roomDoc.data();
-        const updatedMembers = data.members.filter(
-          (member) => member.userId !== userId
-        );
-
-        // update the room document with the new members list
-        await updateDoc(doc(db, 'rooms', roomId), {
-          members: updatedMembers,
-        });
-
-        // update the state with the new members list
-        setMembers(updatedMembers);
-      }
-    } catch (error) {
-      console.error('Error removing document: ', error);
-    }
-  };
-
-  const handleInvite = async (email) => {
+  const handleInvite = async () => {
     const usersCollection = collection(db, 'users');
 
     const userSnapshot = await getDocs(
@@ -61,17 +39,31 @@ const Room = () => {
           userId: user.id,
           name: userData.name,
           email: userData.email,
-          rating: 1000,
+          rating: 1000, 
           role,
         },
       ];
       await updateDoc(doc(db, 'rooms', roomId), { members: updatedMembers });
       await updateDoc(doc(db, 'users', user.id), { rooms: arrayUnion(roomId) });
       setRoom({ ...room, members: updatedMembers });
-      setMembers([...members, { id: user.id, ...userData }]);
+      setMembers(updatedMembers); 
       alert('User invited successfully!');
     } else {
       alert('User not found.');
+    }
+  };
+
+  const updatePlayerList = async () => {
+    const roomDoc = await getDoc(doc(db, 'rooms', roomId));
+    console.log('updatePlayerList -> roomDoc', roomDoc);
+    if (roomDoc.exists()) {
+      const roomData = roomDoc.data();
+      const playerPromises = roomData.members.map(async (member) => {
+        const userDoc = await getDoc(doc(db, 'users', member.userId));
+        return { userId: userDoc.id, ...userDoc.data(), rating: member.rating };
+      });
+      const playerList = await Promise.all(playerPromises);
+      setMembers(playerList);
     }
   };
 
@@ -101,11 +93,16 @@ const Room = () => {
     <div className='flex flex-col'>
       <h2 className='text-2xl font-bold mb-4'>{room.name}</h2>
       <div className='flex flex-col md:flex-row md:space-x-4'>
-        <div className={`md:w-${userRole === 'admin' || userRole === 'editor' ? '3/5' : 'full'} w-full`}>
+        <div
+          className={`md:w-${
+            userRole === 'admin' || userRole === 'editor' ? '3/5' : 'full'
+          } w-full`}
+        >
           <PlayerList
             players={members}
             loading={loading}
             userRole={userRole}
+            roomId={roomId}
           />
         </div>
         {(userRole === 'admin' || userRole === 'editor') && (
@@ -136,6 +133,13 @@ const Room = () => {
           </div>
         )}
       </div>
+      {(userRole === 'admin' || userRole === 'editor') && (
+        <MatchForm
+          roomId={roomId}
+          updatePlayerList={updatePlayerList}
+          playersList={members}
+        />
+      )}
     </div>
   );
 };
