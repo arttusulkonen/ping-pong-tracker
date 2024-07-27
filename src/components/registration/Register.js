@@ -1,9 +1,9 @@
 import { updateProfile } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import React, { useState } from 'react';
+import { Store } from 'react-notifications-component';
 import { Link, useNavigate } from 'react-router-dom';
 import { auth, createUserWithEmailAndPassword, db } from '../../firebase';
-
 const Register = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -30,11 +30,35 @@ const Register = () => {
         rating: 1000,
       });
 
-      alert('Registration successful!');
+      Store.addNotification({
+        title: 'Registration successful',
+        message: 'You have successfully registered.',
+        type: 'success',
+        insert: 'top',
+        container: 'top-right',
+        animationIn: ['animate__animated', 'animate__fadeIn'],
+        animationOut: ['animate__animated', 'animate__fadeOut'],
+        dismiss: {
+          duration: 3000,
+          onScreen: true,
+        },
+      });
       navigate('/');
     } catch (error) {
       console.error('Error registering:', error);
-      alert('Error registering');
+      Store.addNotification({
+        title: 'Registration failed',
+        message: 'Invalid email or password.',
+        type: 'danger',
+        insert: 'top',
+        container: 'top-right',
+        animationIn: ['animate__animated', 'animate__fadeIn'],
+        animationOut: ['animate__animated', 'animate__fadeOut'],
+        dismiss: {
+          duration: 3000,
+          onScreen: true,
+        },
+      });
     }
   };
 

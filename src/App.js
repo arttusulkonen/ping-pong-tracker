@@ -1,6 +1,8 @@
 import { collection, getDocs } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
+import { ReactNotifications } from 'react-notifications-component';
 import { Route, Routes } from 'react-router-dom';
+import ResetPassword from './components/registration/forgot-password';
 import Login from './components/registration/Login';
 import Register from './components/registration/Register';
 import CreateRoom from './components/rooms/CreateRoom';
@@ -56,33 +58,35 @@ function App() {
 
   return (
     <div className='min-h-screen flex flex-col items-center'>
-    <div className='max-w-screen-xl w-full px-4 py-8'>
-      <Routes>
-        <Route
-          path='/'
-          element={
-            <div className='flex flex-col items-center space-y-4'>
-              <div className='w-full rounded-lg p-4'>
-                <CreateRoom
-                  showModal={showModal}
-                  handleOpenModal={handleOpenModal}
-                  handleCloseModal={handleCloseModal}
-                  currentUser={currentUser}
-                />
+      <ReactNotifications />
+      <div className='max-w-screen-xl w-full px-4 py-8'>
+        <Routes>
+          <Route
+            path='/'
+            element={
+              <div className='flex flex-col items-center space-y-4'>
+                <div className='w-full rounded-lg p-4'>
+                  <CreateRoom
+                    showModal={showModal}
+                    handleOpenModal={handleOpenModal}
+                    handleCloseModal={handleCloseModal}
+                    currentUser={currentUser}
+                  />
+                </div>
+                <div className='w-full bg-white shadow-lg rounded-lg p-4'>
+                  <RoomList rooms={rooms} loading={loading} />
+                </div>
               </div>
-              <div className='w-full bg-white shadow-lg rounded-lg p-4'>
-                <RoomList rooms={rooms} loading={loading}/>
-              </div>
-            </div>
-          }
-        />
-        <Route path='/login' element={<Login />} />
-        <Route path='/register' element={<Register />} />
-        <Route path='/create-room' element={<CreateRoom />} />
-        <Route path='/rooms/:roomId' element={<Room />} />
-      </Routes>
+            }
+          />
+          <Route path='/login' element={<Login />} />
+          <Route path='/register' element={<Register />} />
+          <Route path='forgot-password' element={<ResetPassword />} />
+          <Route path='/create-room' element={<CreateRoom />} />
+          <Route path='/rooms/:roomId' element={<Room />} />
+        </Routes>
+      </div>
     </div>
-  </div>
   );
 }
 

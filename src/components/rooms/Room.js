@@ -9,6 +9,7 @@ import {
   where,
 } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
+import { Store } from 'react-notifications-component';
 import { useParams } from 'react-router-dom';
 import { auth, db } from '../../firebase';
 import MatchForm from '../MatchForm';
@@ -34,13 +35,24 @@ const Room = () => {
     if (user) {
       const userData = user.data();
 
-      // Check if the user is already a member of the room
       const isAlreadyMember = room.members.some(
         (member) => member.userId === user.id
       );
 
       if (isAlreadyMember) {
-        alert('User is already a member of this room.');
+        Store.addNotification({
+          title: 'User is already a member',
+          message: 'User is already a member of this room.',
+          type: 'warning',
+          insert: 'top',
+          container: 'top-right',
+          animationIn: ['animate__animated', 'animate__fadeIn'],
+          animationOut: ['animate__animated', 'animate__fadeOut'],
+          dismiss: {
+            duration: 3000,
+            onScreen: true,
+          },
+        });
         return;
       }
 
@@ -58,9 +70,33 @@ const Room = () => {
       await updateDoc(doc(db, 'users', user.id), { rooms: arrayUnion(roomId) });
       setRoom({ ...room, members: updatedMembers });
       setMembers(updatedMembers);
-      alert('User invited successfully!');
+      Store.addNotification({
+        title: 'User Invited',
+        message: 'User has been invited to the room.',
+        type: 'success',
+        insert: 'top',
+        container: 'top-right',
+        animationIn: ['animate__animated', 'animate__fadeIn'],
+        animationOut: ['animate__animated', 'animate__fadeOut'],
+        dismiss: {
+          duration: 3000,
+          onScreen: true,
+        },
+      });
     } else {
-      alert('User not found.');
+      Store.addNotification({
+        title: 'User Not Found',
+        message: 'User with this email does not exist.',
+        type: 'danger',
+        insert: 'top',
+        container: 'top-right',
+        animationIn: ['animate__animated', 'animate__fadeIn'],
+        animationOut: ['animate__animated', 'animate__fadeOut'],
+        dismiss: {
+          duration: 3000,
+          onScreen: true,
+        },
+      });
     }
   };
 
@@ -102,7 +138,19 @@ const Room = () => {
 
   const handleJoinRoom = async () => {
     if (!auth.currentUser) {
-      alert('You need to be logged in to join the room.');
+      Store.addNotification({
+        title: 'Not Logged In',
+        message: 'You need to be logged in to join the room.',
+        type: 'danger',
+        insert: 'top',
+        container: 'top-right',
+        animationIn: ['animate__animated', 'animate__fadeIn'],
+        animationOut: ['animate__animated', 'animate__fadeOut'],
+        dismiss: {
+          duration: 3000,
+          onScreen: true,
+        },
+      });
       return;
     }
 
@@ -122,6 +170,19 @@ const Room = () => {
     await updateDoc(doc(db, 'rooms', roomId), { members: updatedMembers });
     await updateDoc(userDoc, { rooms: arrayUnion(roomId) });
     setMembers(updatedMembers);
+    Store.addNotification({
+      title: 'Joined Room',
+      message: 'You have successfully joined the room.',
+      type: 'success',
+      insert: 'top',
+      container: 'top-right',
+      animationIn: ['animate__animated', 'animate__fadeIn'],
+      animationOut: ['animate__animated', 'animate__fadeOut'],
+      dismiss: {
+        duration: 3000,
+        onScreen: true,
+      },
+    });
   };
 
   const handleLeaveRoom = async () => {
@@ -133,6 +194,19 @@ const Room = () => {
       rooms: arrayUnion(roomId),
     });
     setMembers(updatedMembers);
+    Store.addNotification({
+      title: 'Left Room',
+      message: 'You have successfully left the room.',
+      type: 'success',
+      insert: 'top',
+      container: 'top-right',
+      animationIn: ['animate__animated', 'animate__fadeIn'],
+      animationOut: ['animate__animated', 'animate__fadeOut'],
+      dismiss: {
+        duration: 3000,
+        onScreen: true,
+      },
+    });
   };
 
   return (
@@ -185,7 +259,6 @@ const Room = () => {
                 Join Room
               </button>
             )}
-          {/* also allow person a leave the room */}
           {!loading &&
             auth.currentUser &&
             members.some(

@@ -8,6 +8,7 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
+import { Store } from 'react-notifications-component';
 import { db } from '../firebase';
 
 const MatchForm = ({ updatePlayerList, roomId, playersList }) => {
@@ -108,11 +109,7 @@ const MatchForm = ({ updatePlayerList, roomId, playersList }) => {
 
     const score1Value = parseInt(score1);
     const score2Value = parseInt(score2);
-    if (isNaN(score1Value) || isNaN(score2Value)) {
-      alert('Please enter valid numbers for scores.');
-      return;
-    }
-
+    
     const winner = score1Value > score2Value ? player1 : player2;
 
     try {
@@ -120,7 +117,19 @@ const MatchForm = ({ updatePlayerList, roomId, playersList }) => {
       const player2Doc = players.find((player) => player.name === player2);
 
       if (!player1Doc || !player2Doc) {
-        alert('Players not found');
+        Store.addNotification({
+          title: 'Error',
+          message: 'Please select valid players',
+          type: 'danger',
+          insert: 'top',
+          container: 'top-right',
+          animationIn: ['animate__animated', 'animate__fadeIn'],
+          animationOut: ['animate__animated', 'animate__fadeOut'],
+          dismiss: {
+            duration: 3000,
+            onScreen: true,
+          },
+        });
         return;
       }
 

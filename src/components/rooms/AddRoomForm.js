@@ -8,6 +8,7 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import React, { useState } from 'react';
+import { Store } from 'react-notifications-component';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../../firebase';
 
@@ -17,7 +18,19 @@ const AddRoomForm = ({ currentUser, onClose }) => {
 
   const handleCreateRoom = async () => {
     if (!roomName) {
-      alert('Room name is required');
+      Store.addNotification({
+        title: 'Room name required',
+        message: 'Please enter a name for the room.',
+        type: 'warning',
+        insert: 'top',
+        container: 'top-right',
+        animationIn: ['animate__animated', 'animate__fadeIn'],
+        animationOut: ['animate__animated', 'animate__fadeOut'],
+        dismiss: {
+          duration: 3000,
+          onScreen: true,
+        },
+      });
       return;
     }
 
@@ -25,7 +38,19 @@ const AddRoomForm = ({ currentUser, onClose }) => {
     const user = currentUser;
 
     if (!user) {
-      alert('You must be logged in to create a room');
+      Store.addNotification({
+        title: 'Login required',
+        message: 'You must be logged in to create a room.',
+        type: 'warning',
+        insert: 'top',
+        container: 'top-right',
+        animationIn: ['animate__animated', 'animate__fadeIn'],
+        animationOut: ['animate__animated', 'animate__fadeOut'],
+        dismiss: {
+          duration: 3000,
+          onScreen: true,
+        },
+      });
       return;
     }
 
@@ -74,14 +99,50 @@ const AddRoomForm = ({ currentUser, onClose }) => {
           });
         }
 
-        alert('Room created successfully!');
+        Store.addNotification({
+          title: 'Room created',
+          message: 'Room has been created successfully.',
+          type: 'success',
+          insert: 'top',
+          container: 'top-right',
+          animationIn: ['animate__animated', 'animate__fadeIn'],
+          animationOut: ['animate__animated', 'animate__fadeOut'],
+          dismiss: {
+            duration: 3000,
+            onScreen: true,
+          },
+        });
         navigate(`/rooms/${roomRef.id}`);
       } catch (error) {
         console.error('Error adding document: ', error);
-        alert('An error occurred while creating the room');
+        Store.addNotification({
+          title: 'Error creating room',
+          message: 'An error occurred while creating the room.',
+          type: 'danger',
+          insert: 'top',
+          container: 'top-right',
+          animationIn: ['animate__animated', 'animate__fadeIn'],
+          animationOut: ['animate__animated', 'animate__fadeOut'],
+          dismiss: {
+            duration: 3000,
+            onScreen: true,
+          },
+        });
       }
     } else {
-      alert('You must be logged in to create a room');
+      Store.addNotification({
+        title: 'Login required',
+        message: 'You must be logged in to create a room.',
+        type: 'warning',
+        insert: 'top',
+        container: 'top-right',
+        animationIn: ['animate__animated', 'animate__fadeIn'],
+        animationOut: ['animate__animated', 'animate__fadeOut'],
+        dismiss: {
+          duration: 3000,
+          onScreen: true,
+        },
+      });
     }
   };
 
