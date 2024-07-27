@@ -33,20 +33,31 @@ const Room = () => {
 
     if (user) {
       const userData = user.data();
+
+      // Check if the user is already a member of the room
+      const isAlreadyMember = room.members.some(
+        (member) => member.userId === user.id
+      );
+
+      if (isAlreadyMember) {
+        alert('User is already a member of this room.');
+        return;
+      }
+
       const updatedMembers = [
         ...room.members,
         {
           userId: user.id,
           name: userData.name,
           email: userData.email,
-          rating: 1000, 
+          rating: 1000,
           role,
         },
       ];
       await updateDoc(doc(db, 'rooms', roomId), { members: updatedMembers });
       await updateDoc(doc(db, 'users', user.id), { rooms: arrayUnion(roomId) });
       setRoom({ ...room, members: updatedMembers });
-      setMembers(updatedMembers); 
+      setMembers(updatedMembers);
       alert('User invited successfully!');
     } else {
       alert('User not found.');
@@ -55,7 +66,7 @@ const Room = () => {
 
   const updatePlayerList = async () => {
     const roomDoc = await getDoc(doc(db, 'rooms', roomId));
-    console.log('updatePlayerList -> roomDoc', roomDoc);
+
     if (roomDoc.exists()) {
       const roomData = roomDoc.data();
       const playerPromises = roomData.members.map(async (member) => {
@@ -89,15 +100,46 @@ const Room = () => {
     fetchRoomData();
   }, [roomId]);
 
+  const handleJoinRoom = async () => {
+    if (!auth.currentUser) {
+      alert('You need to be logged in to join the room.');
+      return;
+    }
+
+    const userDoc = doc(db, 'users', auth.currentUser.uid);
+    const userDocSnap = await getDoc(userDoc);
+    const userData = userDocSnap.data();
+    const updatedMembers = [
+      ...members,
+      {
+        userId: auth.currentUser.uid,
+        name: userData.name,
+        email: userData.email,
+        rating: 1000,
+        role: 'viewer',
+      },
+    ];
+    await updateDoc(doc(db, 'rooms', roomId), { members: updatedMembers });
+    await updateDoc(userDoc, { rooms: arrayUnion(roomId) });
+    setMembers(updatedMembers);
+  };
+
+  const handleLeaveRoom = async () => {
+    const updatedMembers = members.filter(
+      (member) => member.userId !== auth.currentUser.uid
+    );
+    await updateDoc(doc(db, 'rooms', roomId), { members: updatedMembers });
+    await updateDoc(doc(db, 'users', auth.currentUser.uid), {
+      rooms: arrayUnion(roomId),
+    });
+    setMembers(updatedMembers);
+  };
+
   return (
     <div className='flex flex-col'>
       <h2 className='text-2xl font-bold mb-4'>{room.name}</h2>
-      <div className='flex flex-col md:flex-row md:space-x-4'>
-        <div
-          className={`md:w-${
-            userRole === 'admin' || userRole === 'editor' ? '3/5' : 'full'
-          } w-full`}
-        >
+      <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+        <div className='md:col-span-2'>
           <PlayerList
             players={members}
             loading={loading}
@@ -105,9 +147,9 @@ const Room = () => {
             roomId={roomId}
           />
         </div>
-        {(userRole === 'admin' || userRole === 'editor') && (
-          <div className='md:w-2/5 w-full mt-4 md:mt-0'>
-            <div className='space-y-4'>
+        <div className='space-y-4'>
+          {(userRole === 'admin' || userRole === 'editor') && (
+            <>
               <input
                 type='email'
                 value={memberEmail}
@@ -129,9 +171,34 @@ const Room = () => {
               >
                 Invite User
               </button>
-            </div>
-          </div>
-        )}
+            </>
+          )}
+          {!loading &&
+            auth.currentUser &&
+            !members.some(
+              (member) => member.userId === auth.currentUser.uid
+            ) && (
+              <button
+                onClick={handleJoinRoom}
+                className='w-full font-sports uppercase bg-blue-500 text-white border-t-1 border-l-1 border-b-4 border-r-4 border-black px-4 py-2 active:border-b-0 active:border-r-0 active:border-t-4 active:border-l-4 selectable'
+              >
+                Join Room
+              </button>
+            )}
+          {/* also allow person a leave the room */}
+          {!loading &&
+            auth.currentUser &&
+            members.some(
+              (member) => member.userId === auth.currentUser.uid
+            ) && (
+              <button
+                onClick={handleLeaveRoom}
+                className='w-full font-sports uppercase bg-red-500 text-white border-t-1 border-l-1 border-b-4 border-r-4 border-black px-4 py-2 active:border-b-0 active:border-r-0 active:border-t-4 active:border-l-4 selectable'
+              >
+                Leave Room
+              </button>
+            )}
+        </div>
       </div>
       {(userRole === 'admin' || userRole === 'editor') && (
         <MatchForm
