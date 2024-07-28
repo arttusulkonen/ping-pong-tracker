@@ -2,6 +2,7 @@ import { collection, getDocs } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { ReactNotifications } from 'react-notifications-component';
 import { Route, Routes } from 'react-router-dom';
+import Player from './components/player/Player';
 import ResetPassword from './components/registration/forgot-password';
 import Login from './components/registration/Login';
 import Register from './components/registration/Register';
@@ -79,6 +80,7 @@ function App() {
               </div>
             }
           />
+          <Route path='player/:id' element={<Player />} />
           <Route path='/login' element={<Login />} />
           <Route path='/register' element={<Register />} />
           <Route path='forgot-password' element={<ResetPassword />} />
