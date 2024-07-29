@@ -66,7 +66,7 @@ function App() {
             path='/'
             element={
               <div className='flex flex-col items-center space-y-4'>
-                <div className='w-full rounded-lg p-4'>
+                <div className='w-full p-4'>
                   <CreateRoom
                     showModal={showModal}
                     handleOpenModal={handleOpenModal}
@@ -74,7 +74,7 @@ function App() {
                     currentUser={currentUser}
                   />
                 </div>
-                <div className='w-full bg-white shadow-lg rounded-lg p-4'>
+                <div className='w-full bg-white shadow-lg p-4'>
                   <RoomList rooms={rooms} loading={loading} />
                 </div>
               </div>

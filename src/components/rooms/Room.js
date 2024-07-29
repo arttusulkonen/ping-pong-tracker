@@ -9,11 +9,13 @@ import {
   where,
 } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
+import { useAuthState } from 'react-firebase-hooks/auth';
 import { Store } from 'react-notifications-component';
 import { useParams } from 'react-router-dom';
 import { auth, db } from '../../firebase';
 import MatchForm from '../MatchForm';
 import PlayerList from '../PlayerList';
+import LastMatches from '../matches/LastMatches';
 
 const Room = () => {
   const { roomId } = useParams();
@@ -22,7 +24,9 @@ const Room = () => {
   const [userRole, setUserRole] = useState('');
   const [role, setRole] = useState('viewer');
   const [memberEmail, setMemberEmail] = useState('');
-  const [room, setRoom] = useState({ name: 'Loading...' }); // Default room name
+  const [room, setRoom] = useState({ name: 'Loading...' });
+  const [user] = useAuthState(auth);
+  const [updateMatches, setUpdateMatches] = useState(false);
 
   const handleInvite = async () => {
     const usersCollection = collection(db, 'users');
@@ -107,11 +111,22 @@ const Room = () => {
       const roomData = roomDoc.data();
       const playerPromises = roomData.members.map(async (member) => {
         const userDoc = await getDoc(doc(db, 'users', member.userId));
-        return { userId: userDoc.id, ...userDoc.data(), rating: member.rating };
+
+        return {
+          userId: userDoc.id,
+          ...userDoc.data(),
+          rating: member.rating,
+          wins: member.wins,
+          losses: member.losses,
+        };
       });
       const playerList = await Promise.all(playerPromises);
       setMembers(playerList);
     }
+  };
+
+  const refreshMatches = () => {
+    setUpdateMatches((prev) => !prev);
   };
 
   useEffect(() => {
@@ -273,13 +288,17 @@ const Room = () => {
             )}
         </div>
       </div>
-      {(userRole === 'admin' || userRole === 'editor') && (
+
+      {user && (
         <MatchForm
           roomId={roomId}
           updatePlayerList={updatePlayerList}
           playersList={members}
+          onMatchAdded={refreshMatches}
         />
       )}
+
+      {user && <LastMatches roomId={roomId} updateMatches={updateMatches} />}
     </div>
   );
 };

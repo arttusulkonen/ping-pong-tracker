@@ -28,7 +28,7 @@ const AddPlayerForm = ({ onClose, updatePlayerList }) => {
   };
 
   return (
-    <div className='mx-auto block max-w-sm rounded-lg bg-surface-dark p-6 shadow-4'>
+    <div className='mx-auto block max-w-sm bg-surface-dark p-6 shadow-4'>
       <form onSubmit={handleSubmit}>
         <input
           type='text'

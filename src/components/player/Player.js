@@ -1,18 +1,38 @@
+import { doc, getDoc } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
-
-import { auth } from '../../firebase';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth, db } from '../../firebase';
 
 const Player = () => {
-  const [user, setUser] = useState();
+  const [user] = useAuthState(auth);
+  const [player, setPlayer] = useState(null);
 
   useEffect(() => {
-    setUser(auth.currentUser);
-  }, []);
+    const getPlayer = async () => {
+      const playerRef = doc(db, 'users', user.uid);
+      const playerSnap = await getDoc(playerRef);
+      if (playerSnap.exists()) {
+        setPlayer(playerSnap.data());
+      }
+    };
+    if (user) {
+      getPlayer();
+    }
+  }, [user]);
 
   return (
     <div>
       <h1>Player</h1>
-      <p>{user && user.email}</p>
+
+      {player && (
+        <div>
+          <h2>Hei,{player.name}</h2>
+
+          <p>Rating: {player.rating}</p>
+          <p>Wins: {player.wins}</p>
+          <p>Losses: {player.losses}</p>
+        </div>
+      )}
     </div>
   );
 };

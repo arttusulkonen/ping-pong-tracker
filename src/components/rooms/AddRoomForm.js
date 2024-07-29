@@ -147,9 +147,9 @@ const AddRoomForm = ({ currentUser, onClose }) => {
   };
 
   return (
-    <div className='mx-auto block max-w-sm rounded-lg bg-surface-dark p-6 shadow-4'>
+    <div className='mx-auto block max-w-sm bg-surface-dark p-6 shadow-4'>
       <form
-        className='w-full max-w-sm mx-auto bg-white p-8 rounded-lg '
+        className='w-full max-w-sm mx-auto bg-white p-8'
         onSubmit={(e) => {
           e.preventDefault();
           handleCreateRoom();

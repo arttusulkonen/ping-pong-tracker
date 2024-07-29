@@ -7,7 +7,7 @@ const RoomList = ({ rooms, loading }) => {
       <h2 className='text-2xl font-bold mb-4 text-gray-700'>Rooms</h2>
       <div className='-m-1.5 overflow-x-auto'>
         <div className='p-1.5 min-w-full inline-block align-middle'>
-          <div className='overflow-hidden shadow-md rounded-lg'>
+          <div className='overflow-hidden shadow-md'>
             <table className='min-w-full divide-y divide-gray-200'>
               <thead className='bg-gray-800'>
                 <tr>

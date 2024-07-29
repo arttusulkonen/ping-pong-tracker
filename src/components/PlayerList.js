@@ -36,7 +36,7 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
     <div className='flex flex-col'>
       <div className='-m-1.5 overflow-x-auto'>
         <div className='p-1.5 min-w-full inline-block align-middle'>
-          <div className='overflow-hidden shadow-md rounded-lg'>
+          <div className='overflow-hidden shadow-md'>
             <table className='min-w-full divide-y divide-gray-200'>
               <thead className='bg-gray-800'>
                 <tr>
@@ -51,6 +51,12 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
                     className='py-3 px-6 text-left text-xs font-medium text-white uppercase tracking-wider'
                   >
                     Points
+                  </th>
+                  <th
+                    scope='col'
+                    className='py-3 px-6 text-left text-xs font-medium text-white uppercase tracking-wider'
+                  >
+                    Wins/Losses
                   </th>
                   {(userRole === 'admin' || userRole === 'editor') && (
                     <th
@@ -89,6 +95,9 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
                       </td>
                       <td className='py-4 px-6 text-sm text-white whitespace-nowrap'>
                         {player.rating}
+                      </td>
+                      <td className='py-4 px-6 text-sm text-white whitespace-nowrap'>
+                        {player.wins || 0}/{player.losses || 0}
                       </td>
                       {(userRole === 'admin' || userRole === 'editor') && (
                         <td className='py-4 px-6 flex justify-end text-sm font-medium whitespace-nowrap'>
