@@ -157,21 +157,20 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
       );
 
       const matchData = {
-        match: {
-          player1: {
-            name: player1Doc.name,
-            id: player1Doc.userId,
-            scores: score1Value,
-          },
-          player2: {
-            name: player2Doc.name,
-            id: player2Doc.userId,
-            scores: score2Value,
-          },
-          timestamp: timestamp,
-          roomId,
-          winner,
+        player1Id: player1Doc.userId,
+        player2Id: player2Doc.userId,
+        players: [player1Doc.userId, player2Doc.userId],
+        player1: {
+          name: player1Doc.name,
+          scores: score1Value,
         },
+        player2: {
+          name: player2Doc.name,
+          scores: score2Value,
+        },
+        timestamp: timestamp,
+        roomId: roomId,
+        winner: winner,
       };
 
       await addDoc(collection(db, 'matches'), matchData);

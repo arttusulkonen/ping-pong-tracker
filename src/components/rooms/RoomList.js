@@ -4,36 +4,32 @@ import { Link } from 'react-router-dom';
 const RoomList = ({ rooms, loading }) => {
   return (
     <div className='flex flex-col'>
-      <h2 className='text-2xl font-bold mb-4 text-gray-700'>Rooms</h2>
+      <h2 className='text-2xl font-bold mb-4 text-white'>Rooms</h2>
       <div className='-m-1.5 overflow-x-auto'>
         <div className='p-1.5 min-w-full inline-block align-middle'>
           <div className='overflow-hidden shadow-md'>
-            <table className='min-w-full divide-y divide-gray-200'>
-              <thead className='bg-gray-800'>
+            <table className='min-w-full bg-white shadow rounded-lg'>
+              <thead>
                 <tr>
-                  <th
-                    scope='col'
-                    className='py-3 px-6 text-left text-xs font-medium text-white uppercase tracking-wider'
-                  >
+                  <th className='py-3 px-6 bg-gray-200 text-left text-xs font-medium text-gray-700 uppercase tracking-wider'>
                     Room Name
                   </th>
                 </tr>
               </thead>
-              <tbody className='bg-gray-800 divide-y divide-gray-700'>
+              <tbody className='divide-y divide-gray-200'>
                 {loading ? (
-                  <tr>
-                    <td
-                      colSpan={1}
-                      className='text-center py-4 text-sm text-white'
-                    >
-                      Loading rooms...
-                    </td>
-                  </tr>
+                  Array.from({ length: 5 }).map((_, index) => (
+                    <tr key={index}>
+                      <td className='py-4 px-6 text-sm text-gray-900 animate-pulse'>
+                        <div className='h-4 bg-gray-300 rounded w-3/4'></div>
+                      </td>
+                    </tr>
+                  ))
                 ) : rooms.length === 0 ? (
                   <tr>
                     <td
                       colSpan={1}
-                      className='text-center py-4 text-sm text-white'
+                      className='text-center py-4 text-sm text-gray-700'
                     >
                       No rooms available.
                     </td>
@@ -41,10 +37,10 @@ const RoomList = ({ rooms, loading }) => {
                 ) : (
                   rooms.map((room) => (
                     <tr key={room.id}>
-                      <td className='py-4 px-6 text-sm font-medium text-white whitespace-nowrap'>
+                      <td className='py-4 px-6 text-sm font-medium text-gray-900 whitespace-nowrap'>
                         <Link
                           to={`/rooms/${room.id}`}
-                          className='underline hover:text-gray-200'
+                          className='underline hover:text-gray-700'
                         >
                           {room.name}
                         </Link>

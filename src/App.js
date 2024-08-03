@@ -9,6 +9,7 @@ import Register from './components/registration/Register';
 import CreateRoom from './components/rooms/CreateRoom';
 import Room from './components/rooms/Room';
 import RoomList from './components/rooms/RoomList';
+import UpdateMatches from './components/UpdateMatches';
 import { auth, db } from './firebase';
 
 function App() {
@@ -74,13 +75,13 @@ function App() {
                     currentUser={currentUser}
                   />
                 </div>
-                <div className='w-full bg-white shadow-lg p-4'>
+                <div className='w-full'>
                   <RoomList rooms={rooms} loading={loading} />
                 </div>
               </div>
             }
           />
-          <Route path='player/:id' element={<Player />} />
+          <Route path='/player/:userId' element={<Player />} />
           <Route path='/login' element={<Login />} />
           <Route path='/register' element={<Register />} />
           <Route path='forgot-password' element={<ResetPassword />} />

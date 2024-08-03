@@ -1,5 +1,6 @@
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { db } from '../firebase';
 
 const PlayerList = ({ players, loading, userRole, roomId }) => {
@@ -70,18 +71,28 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
               </thead>
               <tbody className='bg-gray-800 divide-y divide-gray-700'>
                 {loading ? (
-                  <tr>
-                    <td
-                      colSpan={3}
-                      className='text-center py-4 text-sm text-white'
-                    >
-                      Loading players...
-                    </td>
-                  </tr>
+                  Array.from({ length: 5 }).map((_, index) => (
+                    <tr key={index}>
+                      <td className='py-4 px-6 text-sm text-gray-900 animate-pulse'>
+                        <div className='h-4 bg-gray-300 rounded w-3/4'></div>
+                      </td>
+                      <td className='py-4 px-6 text-sm text-gray-900 animate-pulse'>
+                        <div className='h-4 bg-gray-300 rounded w-1/4'></div>
+                      </td>
+                      <td className='py-4 px-6 text-sm text-gray-900 animate-pulse'>
+                        <div className='h-4 bg-gray-300 rounded w-1/4'></div>
+                      </td>
+                      {(userRole === 'admin' || userRole === 'editor') && (
+                        <td className='py-4 px-6 text-sm text-gray-900 animate-pulse'>
+                          <div className='h-4 bg-gray-300 rounded w-1/4'></div>
+                        </td>
+                      )}
+                    </tr>
+                  ))
                 ) : sortedPlayers.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={3}
+                      colSpan={4}
                       className='text-center py-4 text-sm text-white'
                     >
                       No players in this room.
@@ -91,7 +102,12 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
                   sortedPlayers.map((player) => (
                     <tr key={player.userId}>
                       <td className='py-4 px-6 text-sm font-medium text-white whitespace-nowrap'>
-                        {player.name}
+                        <Link
+                          to={`/player/${player.userId}`}
+                          className='underline hover:text-gray-200'
+                        >
+                          {player.name}
+                        </Link>
                       </td>
                       <td className='py-4 px-6 text-sm text-white whitespace-nowrap'>
                         {player.rating}
