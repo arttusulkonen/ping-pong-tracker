@@ -30,6 +30,11 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
     }
   };
 
+  const calculateWinPercentage = (wins, losses) => {
+    const totalMatches = wins + losses;
+    return totalMatches === 0 ? 0 : ((wins / totalMatches) * 100).toFixed(2);
+  };
+
   // Filter and sort players by rating
   const sortedPlayers = [...members].sort((a, b) => b.rating - a.rating);
 
@@ -57,7 +62,13 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
                     scope='col'
                     className='py-3 px-6 text-left text-xs font-medium text-white uppercase tracking-wider'
                   >
-                    Wins/Losses
+                    Matches Played
+                  </th>
+                  <th
+                    scope='col'
+                    className='py-3 px-6 text-left text-xs font-medium text-white uppercase tracking-wider'
+                  >
+                    Wins %
                   </th>
                   {(userRole === 'admin' || userRole === 'editor') && (
                     <th
@@ -82,6 +93,9 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
                       <td className='py-4 px-6 text-sm text-gray-900 animate-pulse'>
                         <div className='h-4 bg-gray-300 rounded w-1/4'></div>
                       </td>
+                      <td className='py-4 px-6 text-sm text-gray-900 animate-pulse'>
+                        <div className='h-4 bg-gray-300 rounded w-1/4'></div>
+                      </td>
                       {(userRole === 'admin' || userRole === 'editor') && (
                         <td className='py-4 px-6 text-sm text-gray-900 animate-pulse'>
                           <div className='h-4 bg-gray-300 rounded w-1/4'></div>
@@ -92,7 +106,7 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
                 ) : sortedPlayers.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={4}
+                      colSpan={5}
                       className='text-center py-4 text-sm text-white'
                     >
                       No players in this room.
@@ -113,7 +127,10 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
                         {player.rating}
                       </td>
                       <td className='py-4 px-6 text-sm text-white whitespace-nowrap'>
-                        {player.wins || 0}/{player.losses || 0}
+                        {(player.wins || 0) + (player.losses || 0)}
+                      </td>
+                      <td className='py-4 px-6 text-sm text-white whitespace-nowrap'>
+                        {calculateWinPercentage(player.wins || 0, player.losses || 0)}%
                       </td>
                       {(userRole === 'admin' || userRole === 'editor') && (
                         <td className='py-4 px-6 flex justify-end text-sm font-medium whitespace-nowrap'>
