@@ -36,7 +36,21 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
   };
 
   // Filter and sort players by rating
-  const sortedPlayers = [...members].sort((a, b) => b.rating - a.rating);
+  const sortedPlayers = [...members]
+    .map((player) => {
+      const totalMatches = (player.wins || 0) + (player.losses || 0);
+      return {
+        ...player,
+        totalMatches,
+        ratingVisible: totalMatches >= 5,
+      };
+    })
+    .sort((a, b) => {
+      if (a.ratingVisible === b.ratingVisible) {
+        return b.rating - a.rating;
+      }
+      return a.ratingVisible ? -1 : 1;
+    });
 
   return (
     <div className='flex flex-col'>
@@ -124,13 +138,20 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
                         </Link>
                       </td>
                       <td className='py-4 px-6 text-sm text-white whitespace-nowrap'>
-                        {player.rating}
+                        {player.ratingVisible ? player.rating : 'Hidden'}
                       </td>
                       <td className='py-4 px-6 text-sm text-white whitespace-nowrap'>
-                        {(player.wins || 0) + (player.losses || 0)}
+                        {player.totalMatches}
                       </td>
                       <td className='py-4 px-6 text-sm text-white whitespace-nowrap'>
-                        {calculateWinPercentage(player.wins || 0, player.losses || 0)}%
+                        {player.ratingVisible ? (
+                          <span>
+                            {calculateWinPercentage(player.wins, player.losses)}
+                            %
+                          </span>
+                        ) : (
+                          'Hidden'
+                        )}
                       </td>
                       {(userRole === 'admin' || userRole === 'editor') && (
                         <td className='py-4 px-6 flex justify-end text-sm font-medium whitespace-nowrap'>

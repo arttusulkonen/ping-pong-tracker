@@ -11,3 +11,17 @@ body {
   @apply bg-blue-700 text-white;
   font-family: 'Sports World', sans-serif;
 }
+
+/* Custom tooltip styles */
+.custom-tooltip {
+  background-color: rgba(0, 0, 0, 0.8) !important;
+  color: white !important;
+  font-size: 14px !important;
+  padding: 10px !important;
+  border-radius: 5px !important;
+  max-width: 350px !important;
+}
+
+.custom-tooltip .react-tooltip-arrow {
+  color: rgba(0, 0, 0, 0.8) !important;
+}

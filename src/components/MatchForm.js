@@ -33,6 +33,17 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
     return Math.round(newRating);
   };
 
+  const getRank = (rating) => {
+    if (rating < 1000) return 'Novice';
+    if (rating < 1200) return 'Amateur';
+    if (rating < 1400) return 'Apprentice';
+    if (rating < 1600) return 'Professional';
+    if (rating < 1800) return 'Expert';
+    if (rating < 2000) return 'Master';
+    return 'Grandmaster';
+  };
+
+
   const updatePlayerStats = async (playerId, newRating, wins, losses) => {
     if (!playerId) {
       console.error('Player ID is undefined');
@@ -45,6 +56,7 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
         rating: newRating,
         wins: wins,
         losses: losses,
+        rank: getRank(newRating),
       });
     } catch (error) {
       console.error(`Error updating player ${playerId}:`, error);
@@ -71,7 +83,7 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
       }
       const roomData = roomDoc.data();
       const timestamp = getFinnishFormattedDate();
-      console.log('timestamp', timestamp);
+
       const updatedMembers = roomData.members.map((member) => {
         if (member.userId === userId) {
           return {

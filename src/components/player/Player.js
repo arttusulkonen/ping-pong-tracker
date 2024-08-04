@@ -9,6 +9,8 @@ import {
 } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { Tooltip } from 'react-tooltip';
+import 'react-tooltip/dist/react-tooltip.css';
 import { db } from '../../firebase';
 
 const Player = () => {
@@ -18,6 +20,51 @@ const Player = () => {
   const [loadingPlayer, setLoadingPlayer] = useState(true);
   const [loadingMatches, setLoadingMatches] = useState(true);
   const [error, setError] = useState(null);
+
+  const getRank = (rating) => {
+    if (rating < 1000) return 'Novice';
+    if (rating < 1200) return 'Amateur';
+    if (rating < 1400) return 'Apprentice';
+    if (rating < 1600) return 'Professional';
+    if (rating < 1800) return 'Expert';
+    if (rating < 2000) return 'Master';
+    return 'Grandmaster';
+  };
+
+  const getMedal = (rank) => {
+    switch (rank) {
+      case 'Novice':
+        return '🥉'; // Bronze Medal
+      case 'Amateur':
+        return '🥈'; // Silver Medal
+      case 'Apprentice':
+        return '🥈'; // Silver Medal
+      case 'Professional':
+        return '🥇'; // Gold Medal
+      case 'Expert':
+        return '🥇'; // Gold Medal
+      case 'Master':
+        return '🏆'; // Trophy
+      case 'Grandmaster':
+        return '🏆'; // Trophy
+      default:
+        return '';
+    }
+  };
+
+  const getAllRankExplanations = () => {
+    return `
+      <div class="tooltip-content p-2 text-base">
+        <div><strong>Novice:</strong> Less than 1000 points</div>
+        <div><strong>Amateur:</strong> 1000-1199 points</div>
+        <div><strong>Apprentice:</strong> 1200-1399 points</div>
+        <div><strong>Professional:</strong> 1400-1599 points</div>
+        <div><strong>Expert:</strong> 1600-1799 points</div>
+        <div><strong>Master:</strong> 1800-1999 points</div>
+        <div><strong>Grandmaster:</strong> 2000+ points</div>
+      </div>
+    `;
+  };
 
   useEffect(() => {
     const getPlayer = async () => {
@@ -68,12 +115,29 @@ const Player = () => {
     return <div className='text-red-500'>{error}</div>;
   }
 
+  const rank = player ? getRank(player.rating) : '';
+  const medal = player ? getMedal(rank) : '';
+  const rankExplanations = getAllRankExplanations();
+
   return (
     <div className='container mx-auto py-8'>
       <h1 className='text-3xl font-bold mb-6'>Player Profile</h1>
-      <div className='bg-white shadow rounded-lg p-6 mb-8'>
-        <h2 className='text-2xl font-semibold mb-4 text-gray-700'>
+      <div className='bg-white shadow rounded-lg p-6 mb-8 relative'>
+        <h2 className='text-2xl font-semibold mb-4 text-gray-700 flex justify-between items-center'>
           {loadingPlayer ? 'Loading...' : player?.name}
+          {rank && (
+            <div className='flex items-center'>
+              <span
+                className='text-lg font-bold mr-2 items-end'
+                data-tooltip-id='rank-tooltip'
+                data-tooltip-html={rankExplanations}
+              >
+                {rank}
+              </span>
+              <span className='text-2xl'>{medal}</span>
+              <Tooltip id='rank-tooltip' />
+            </div>
+          )}
         </h2>
         {loadingPlayer ? (
           <div className='animate-pulse'>
