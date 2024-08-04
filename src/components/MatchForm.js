@@ -34,13 +34,13 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
   };
 
   const getRank = (rating) => {
-    if (rating < 1000) return 'Novice';
-    if (rating < 1200) return 'Amateur';
-    if (rating < 1400) return 'Apprentice';
-    if (rating < 1600) return 'Professional';
-    if (rating < 1800) return 'Expert';
-    if (rating < 2000) return 'Master';
-    return 'Grandmaster';
+    if (rating < 1000) return 'Ping Pong Padawan';
+    if (rating < 1200) return 'Table Tennis Trainee';
+    if (rating < 1400) return 'Racket Rookie';
+    if (rating < 1600) return 'Paddle Prodigy';
+    if (rating < 1800) return 'Spin Sensei';
+    if (rating < 2000) return 'Smash Samurai';
+    return 'Ping Pong Paladin';
   };
 
 

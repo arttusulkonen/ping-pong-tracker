@@ -9,7 +9,6 @@ import Register from './components/registration/Register';
 import CreateRoom from './components/rooms/CreateRoom';
 import Room from './components/rooms/Room';
 import RoomList from './components/rooms/RoomList';
-import UpdateMatches from './components/UpdateMatches';
 import { auth, db } from './firebase';
 
 function App() {
