@@ -71,9 +71,11 @@ const Player = () => {
       try {
         const playerRef = doc(db, 'users', userId);
         const playerSnap = await getDoc(playerRef);
+
         if (playerSnap.exists()) {
           setPlayer({
             ...playerSnap.data(),
+            totalMatches: playerSnap.data().wins + playerSnap.data().losses,
             id: userId,
           });
         } else {
@@ -151,10 +153,17 @@ const Player = () => {
               <strong>Rating:</strong> {player.rating}
             </p>
             <p className='text-gray-700'>
+              <strong>Total Matches:</strong> {player.totalMatches}
+            </p>
+            <p className='text-gray-700'>
               <strong>Wins:</strong> {player.wins}
             </p>
             <p className='text-gray-700'>
               <strong>Losses:</strong> {player.losses}
+            </p>
+            <p className='text-gray-700'>
+              <strong>Win Rate:</strong>{' '}
+              {((player.wins / player.totalMatches) * 100).toFixed(2)}%
             </p>
           </>
         )}
