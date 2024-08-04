@@ -1,10 +1,21 @@
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Tooltip } from 'react-tooltip';
+import 'react-tooltip/dist/react-tooltip.css';
 import { db } from '../firebase';
 
 const PlayerList = ({ players, loading, userRole, roomId }) => {
   const [members, setMembers] = useState([]);
+
+  const getHiddenRankExplanations = () => {
+    return `
+      <div class="tooltip-content p-2 text-base">
+        <p>Hidden if the player has played less than 5 matches.</p>
+        <p>Your rating will be revealed when you have played more than 5 matches.</p>
+      </div>
+    `;
+  };
 
   useEffect(() => {
     setMembers(players);
@@ -35,7 +46,6 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
     return totalMatches === 0 ? 0 : ((wins / totalMatches) * 100).toFixed(2);
   };
 
-  // Filter and sort players by rating
   const sortedPlayers = [...members]
     .map((player) => {
       const totalMatches = (player.wins || 0) + (player.losses || 0);
@@ -52,49 +62,51 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
       return a.ratingVisible ? -1 : 1;
     });
 
+  const rankExplanations = getHiddenRankExplanations();
+
   return (
     <div className='flex flex-col'>
       <div className='-m-1.5 overflow-x-auto'>
         <div className='p-1.5 min-w-full inline-block align-middle'>
           <div className='overflow-hidden shadow-md'>
-            <table className='min-w-full divide-y divide-gray-200'>
-              <thead className='bg-gray-800'>
+            <table className='min-w-full bg-white shadow rounded-lg'>
+              <thead>
                 <tr>
                   <th
                     scope='col'
-                    className='py-3 px-6 text-left text-xs font-medium text-white uppercase tracking-wider'
+                    className='py-3 px-6 bg-gray-200 text-left text-xs font-medium text-gray-700 uppercase tracking-wider'
                   >
                     Name
                   </th>
                   <th
                     scope='col'
-                    className='py-3 px-6 text-left text-xs font-medium text-white uppercase tracking-wider'
+                    className='py-3 px-6 bg-gray-200 text-left text-xs font-medium text-gray-700 uppercase tracking-wider'
                   >
                     Points
                   </th>
                   <th
                     scope='col'
-                    className='py-3 px-6 text-left text-xs font-medium text-white uppercase tracking-wider'
+                    className='py-3 px-6 bg-gray-200 text-left text-xs font-medium text-gray-700 uppercase tracking-wider'
                   >
                     Matches Played
                   </th>
                   <th
                     scope='col'
-                    className='py-3 px-6 text-left text-xs font-medium text-white uppercase tracking-wider'
+                    className='py-3 px-6 bg-gray-200 text-left text-xs font-medium text-gray-700 uppercase tracking-wider'
                   >
                     Wins %
                   </th>
                   {(userRole === 'admin' || userRole === 'editor') && (
                     <th
                       scope='col'
-                      className='py-3 px-6 text-right text-xs font-medium text-white uppercase tracking-wider'
+                      className='py-3 px-6 bg-gray-200 text-right text-xs font-medium text-gray-700 uppercase tracking-wider'
                     >
                       Action
                     </th>
                   )}
                 </tr>
               </thead>
-              <tbody className='bg-gray-800 divide-y divide-gray-700'>
+              <tbody className='divide-y divide-gray-200'>
                 {loading ? (
                   Array.from({ length: 5 }).map((_, index) => (
                     <tr key={index}>
@@ -121,7 +133,7 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
                   <tr>
                     <td
                       colSpan={5}
-                      className='text-center py-4 text-sm text-white'
+                      className='text-center py-4 text-sm text-gray-700'
                     >
                       No players in this room.
                     </td>
@@ -129,21 +141,31 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
                 ) : (
                   sortedPlayers.map((player) => (
                     <tr key={player.userId}>
-                      <td className='py-4 px-6 text-sm font-medium text-white whitespace-nowrap'>
+                      <td className='py-4 px-6 text-sm font-medium text-gray-900 whitespace-nowrap'>
                         <Link
                           to={`/player/${player.userId}`}
-                          className='underline hover:text-gray-200'
+                          className='underline hover:text-gray-700'
                         >
                           {player.name}
                         </Link>
                       </td>
-                      <td className='py-4 px-6 text-sm text-white whitespace-nowrap'>
-                        {player.ratingVisible ? player.rating : 'Hidden'}
+                      <td className='py-4 px-6 text-sm text-gray-900 whitespace-nowrap'>
+                        {player.ratingVisible ? (
+                          <span>{player.rating}</span>
+                        ) : (
+                          <span
+                            data-tooltip-id='rank-tooltip'
+                            data-tooltip-html={rankExplanations}
+                          >
+                            Hidden
+                            <Tooltip id='rank-tooltip' />
+                          </span>
+                        )}
                       </td>
-                      <td className='py-4 px-6 text-sm text-white whitespace-nowrap'>
+                      <td className='py-4 px-6 text-sm text-gray-900 whitespace-nowrap'>
                         {player.totalMatches}
                       </td>
-                      <td className='py-4 px-6 text-sm text-white whitespace-nowrap'>
+                      <td className='py-4 px-6 text-sm text-gray-900 whitespace-nowrap'>
                         {player.ratingVisible ? (
                           <span>
                             {calculateWinPercentage(player.wins, player.losses)}
