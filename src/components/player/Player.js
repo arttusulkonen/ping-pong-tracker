@@ -22,7 +22,7 @@ const Player = () => {
   const [error, setError] = useState(null);
 
   const getRank = (rating) => {
-    if (rating < 1000) return 'Ping Pong Padawan';
+    if (rating < 1001) return 'Ping Pong Padawan';
     if (rating < 1200) return 'Table Tennis Trainee';
     if (rating < 1400) return 'Racket Rookie';
     if (rating < 1600) return 'Paddle Prodigy';
@@ -55,8 +55,8 @@ const Player = () => {
   const getAllRankExplanations = () => {
     return `
       <div class="tooltip-content p-2 text-base">
-        <div><strong>Ping Pong Padawan:</strong> Less than 1000 points</div>
-        <div><strong>Table Tennis Trainee:</strong> 1000-1199 points</div>
+        <div><strong>Ping Pong Padawan:</strong> Less than 1001 points</div>
+        <div><strong>Table Tennis Trainee:</strong> 1001-1199 points</div>
         <div><strong>Racket Rookie:</strong> 1200-1399 points</div>
         <div><strong>Paddle Prodigy:</strong> 1400-1599 points</div>
         <div><strong>Spin Sensei:</strong> 1600-1799 points</div>

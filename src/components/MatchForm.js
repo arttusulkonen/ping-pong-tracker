@@ -34,7 +34,7 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
   };
 
   const getRank = (rating) => {
-    if (rating < 1000) return 'Ping Pong Padawan';
+    if (rating < 1001) return 'Ping Pong Padawan';
     if (rating < 1200) return 'Table Tennis Trainee';
     if (rating < 1400) return 'Racket Rookie';
     if (rating < 1600) return 'Paddle Prodigy';
