@@ -3,8 +3,24 @@
 @tailwind utilities;
 
 @font-face {
-  font-family: 'Sports World';
-  src: url('./fonts/Sports-World-Regular.ttf') format('truetype'); 
+  font-family: 'Outfit';
+  src: url('./fonts/Outfit-Thin.ttf') format('truetype');
+  font-weight: 100;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Outfit';
+  src: url('./fonts/Outfit-ExtraLight.ttf') format('truetype');
+  font-weight: 200;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Outfit';
+  src: url('./fonts/Outfit-Light.ttf') format('truetype');
+  font-weight: 300;
+  font-style: normal;
 }
 
 @font-face {
@@ -16,14 +32,42 @@
 
 @font-face {
   font-family: 'Outfit';
+  src: url('./fonts/Outfit-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Outfit';
+  src: url('./fonts/Outfit-SemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Outfit';
   src: url('./fonts/Outfit-Bold.ttf') format('truetype');
   font-weight: 700;
   font-style: normal;
 }
 
+@font-face {
+  font-family: 'Outfit';
+  src: url('./fonts/Outfit-ExtraBold.ttf') format('truetype');
+  font-weight: 800;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Outfit';
+  src: url('./fonts/Outfit-Black.ttf') format('truetype');
+  font-weight: 900;
+  font-style: normal;
+}
+
 body {
   @apply bg-blue-700 text-white;
-  font-family: 'Sports World', sans-serif;
+  font-family: 'Outfit', sans-serif;
 }
 
 /* Custom tooltip styles */

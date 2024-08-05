@@ -24,7 +24,7 @@ const Header = () => {
   return (
     <header className='bg-gray-800 text-white p-4 flex justify-between items-center'>
       <div className='flex items-center space-x-4'>
-        <Link to='/' className='text-2xl font-bold'>
+        <Link to='/' className='text-2xl font-outfit font-bold'>
           Ping Pong Tracker
         </Link>
       </div>
