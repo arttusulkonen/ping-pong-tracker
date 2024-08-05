@@ -32,7 +32,7 @@ const LastMatches = ({ roomId, updateMatches }) => {
 
   return (
     <div className='py-4'>
-      <h2 className='text-xl font-bold mb-4'>Last Matches</h2>
+      <h2 className='text-xl font-outfit font-bold mb-4'>Last Matches</h2>
       <div className='overflow-x-auto'>
         <table className='min-w-full bg-white shadow rounded-lg'>
           <thead>

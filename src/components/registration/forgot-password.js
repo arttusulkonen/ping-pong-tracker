@@ -49,7 +49,7 @@ const ResetPassword = () => {
         onSubmit={handleSubmit}
         className='w-full max-w-sm mx-auto bg-white p-8 shadow-md'
       >
-        <h2 className='text-2xl font-bold mb-6 text-gray-700 text-center'>
+        <h2 className='text-2xl font-outfit font-bold mb-6 text-gray-700 text-center'>
           Reset Password
         </h2>
         <div className='mb-4'>

@@ -6,8 +6,9 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        'sports-world': ['Sports World', 'sans-serif']
-      }
+        'sports-world': ['Sports World', 'sans-serif'],
+        'outfit': ['Outfit', 'sans-serif'],
+      },
     },
   },
   plugins: [],

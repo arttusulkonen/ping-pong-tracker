@@ -54,7 +54,7 @@ const Player = () => {
 
   const getAllRankExplanations = () => {
     return `
-      <div class="tooltip-content p-2 text-base">
+      <div class="tooltip-content font-outfit p-2 text-base">
         <div><strong>Ping Pong Padawan:</strong> Less than 1001 points</div>
         <div><strong>Table Tennis Trainee:</strong> 1001-1199 points</div>
         <div><strong>Racket Rookie:</strong> 1200-1399 points</div>
@@ -123,9 +123,9 @@ const Player = () => {
 
   return (
     <div className='container mx-auto px-4 py-8'>
-      <h1 className='text-3xl font-bold mb-6'>Player Profile</h1>
+      <h1 className='text-3xl font-outfit font-bold mb-6'>Player Profile</h1>
       <div className='bg-white shadow rounded-lg p-6 mb-8 relative'>
-        <h2 className='text-2xl font-semibold mb-4 text-gray-700 flex flex-col sm:flex-row justify-between items-start sm:items-center'>
+        <h2 className='text-2xl font-outfit font-bold mb-4 text-gray-700 flex flex-col sm:flex-row justify-between items-start sm:items-center'>
           {loadingPlayer ? 'Loading...' : player?.name}
           {rank && (
             <div className='flex items-center mt-2 sm:mt-0'>
@@ -169,7 +169,7 @@ const Player = () => {
         )}
       </div>
 
-      <h2 className='text-2xl font-bold mb-4'>Last Matches</h2>
+      <h2 className='text-2xl font-outfit font-bold mb-4'>Last Matches</h2>
       <div className='overflow-x-auto'>
         <table className='min-w-full bg-white shadow rounded-lg'>
           <thead>

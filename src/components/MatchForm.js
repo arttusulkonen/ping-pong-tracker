@@ -286,7 +286,7 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
 
   return (
     <div className='block -m-1.5 overflow-x-auto bg-surface-dark shadow-4 py-6'>
-      <h2 className='text-xl font-bold mb-4'>Add Match</h2>
+      <h2 className='text-xl font-outfit font-bold mb-4'>Add Match</h2>
       <form onSubmit={handleSubmit}>
         <div className='mb-4'>
           <label className='block text-sm font-bold mb-2' htmlFor='player1'>

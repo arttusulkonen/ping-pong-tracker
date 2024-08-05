@@ -10,7 +10,7 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
 
   const getHiddenRankExplanations = () => {
     return `
-      <div class="tooltip-content p-2 text-base">
+      <div class="tooltip-content p-2 text-base font-outfit">
         <p>Hidden if the player has played less than 5 matches.</p>
         <p>Your rating will be revealed when you have played more than 5 matches.</p>
       </div>

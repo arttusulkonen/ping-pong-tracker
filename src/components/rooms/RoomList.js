@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 const RoomList = ({ rooms, loading }) => {
   return (
     <div className='flex flex-col'>
-      <h2 className='text-2xl font-bold mb-4 text-white'>Rooms</h2>
+      <h2 className='text-2xl font-outfit font-bold mb-4 text-white'>Rooms</h2>
       <div className='-m-1.5 overflow-x-auto'>
         <div className='p-1.5 min-w-full inline-block align-middle'>
           <div className='overflow-hidden shadow-md'>

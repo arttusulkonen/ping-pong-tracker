@@ -226,7 +226,7 @@ const Room = () => {
 
   return (
     <div className='flex flex-col'>
-      <h2 className='text-2xl font-bold mb-4'>{room.name}</h2>
+      <h2 className='text-2xl font-outfit font-bold mb-4'>{room.name}</h2>
       <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
         <div className='md:col-span-2'>
           <PlayerList
