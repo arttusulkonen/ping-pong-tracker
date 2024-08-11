@@ -10,25 +10,31 @@ const Header = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
-      const fetchPlayer = async () => {
+    const fetchPlayer = async () => {
+      if (user) {
         setLoading(true); 
-        const playersRef = collection(db, 'users');
-        const q = query(playersRef, where('id', '==', user.uid));
-        const querySnapshot = await getDocs(q);
-        querySnapshot.forEach((doc) => {
-          setPlayer({ id: doc.id, ...doc.data() });
-        });
-        setLoading(false);
-      };
-      fetchPlayer();
-    } else {
-      setLoading(false);
-    }
+        try {
+          const playersRef = collection(db, 'users');
+          const q = query(playersRef, where('id', '==', user.uid));
+          const querySnapshot = await getDocs(q);
+          querySnapshot.forEach((doc) => {
+            setPlayer({ id: doc.id, ...doc.data() });
+          });
+        } catch (error) {
+          console.error('Error fetching player data: ', error);
+        } finally {
+          setLoading(false); 
+        }
+      } else {
+        setLoading(false); 
+      }
+    };
+
+    fetchPlayer();
   }, [user]);
 
-  const handleLogout = () => {
-    signOut(auth);
+  const handleLogout = async () => {
+    await signOut(auth);
   };
 
   return (
