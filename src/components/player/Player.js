@@ -8,7 +8,7 @@ import {
   where,
   setDoc,
 } from 'firebase/firestore';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { Tooltip } from 'react-tooltip';
 import 'react-tooltip/dist/react-tooltip.css';
@@ -37,7 +37,6 @@ const Player = ({ onNameUpdate }) => {
   const [currentWinStreak, setCurrentWinStreak] = useState(0);
   const [error, setError] = useState(null);
   const [displayInput, setDisplayInput] = useState(false);
-  const [nameError, setNameError] = useState(false);
   const [user] = useAuthState(auth);
 
   const getRank = (rating) => {
@@ -93,7 +92,6 @@ const Player = ({ onNameUpdate }) => {
     e.preventDefault();
 
     if (!player.name.trim()) {
-      setNameError(true);
       Store.addNotification({
         title: 'Update failed',
         message: 'Name cannot be empty or just spaces.',
@@ -184,7 +182,6 @@ const Player = ({ onNameUpdate }) => {
       });
     } catch (error) {
       if (error.message === '4') {
-        setNameError(true);
         Store.addNotification({
           title: 'Update failed',
           message: 'Nickname is already taken. Please choose another one.',
@@ -205,7 +202,7 @@ const Player = ({ onNameUpdate }) => {
     }
   };
 
-  const fetchPlayer = async () => {
+  const fetchPlayer = useCallback(async () => {
     try {
       const playerRef = doc(db, 'users', userId);
       const playerSnap = await getDoc(playerRef);
@@ -224,9 +221,9 @@ const Player = ({ onNameUpdate }) => {
     } finally {
       setLoadingPlayer(false);
     }
-  };
+  }, [userId]);
 
-  const fetchMatches = async () => {
+  const fetchMatches = useCallback(async () => {
     try {
       const matchesCollection = collection(db, 'matches');
       const q = query(
@@ -243,14 +240,14 @@ const Player = ({ onNameUpdate }) => {
     } finally {
       setLoadingMatches(false);
     }
-  };
+  }, [userId]);
 
   useEffect(() => {
     if (userId) {
       fetchPlayer();
       fetchMatches();
     }
-  }, [userId]);
+  }, [userId, fetchPlayer, fetchMatches]);
 
   useEffect(() => {
     const calculateWinStreaks = () => {
