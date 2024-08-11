@@ -153,17 +153,19 @@ const Player = () => {
               <strong>Rating:</strong> {player.rating}
             </p>
             <p className='text-gray-700'>
-              <strong>Total Matches:</strong> {player.totalMatches}
+              <strong>Total Matches:</strong> {player.totalMatches ? player.totalMatches : 0}
             </p>
             <p className='text-gray-700'>
-              <strong>Wins:</strong> {player.wins}
+              <strong>Wins:</strong> {player.wins ? player.wins : 0}
             </p>
             <p className='text-gray-700'>
-              <strong>Losses:</strong> {player.losses}
+              <strong>Losses:</strong> {player.losses ? player.losses : 0}
             </p>
             <p className='text-gray-700'>
               <strong>Win Rate:</strong>{' '}
-              {((player.wins / player.totalMatches) * 100).toFixed(2)}%
+              {player.totalMatches
+                ? `${((player.wins / player.totalMatches) * 100).toFixed(2)}%`
+                : '0%'}
             </p>
           </>
         )}

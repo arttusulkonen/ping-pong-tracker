@@ -43,7 +43,6 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
     return 'Ping Pong Paladin';
   };
 
-
   const updatePlayerStats = async (playerId, newRating, wins, losses) => {
     if (!playerId) {
       console.error('Player ID is undefined');
@@ -299,7 +298,9 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
               onChange={(e) => setPlayer1(e.target.value)}
             >
               <option value=''>Select a player 1</option>
-              {players.map((player) => (
+              {players
+              .filter(player => player.name !== player2)
+              .map((player) => (
                 <option key={player.userId} value={player.name}>
                   {player.name}
                 </option>
@@ -325,7 +326,10 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
               onChange={(e) => setPlayer2(e.target.value)}
             >
               <option value=''>Select a player 2</option>
-              {players.map((player) => (
+              {
+              players
+              .filter(player => player.name !== player1)
+              .map((player) => (
                 <option key={player.userId} value={player.name}>
                   {player.name}
                 </option>

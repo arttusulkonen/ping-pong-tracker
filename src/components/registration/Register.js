@@ -1,25 +1,48 @@
 import { updateProfile } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, getDocs, collection } from 'firebase/firestore';
 import React, { useState } from 'react';
 import { Store } from 'react-notifications-component';
 import { Link, useNavigate } from 'react-router-dom';
 import { auth, createUserWithEmailAndPassword, db } from '../../firebase';
+
 const Register = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const navigate = useNavigate();
 
+  const [emailError, setEmailError] = useState(false);
+  const [passwordError, setPasswordError] = useState(false);
+  const [nameError, setNameError] = useState(false);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setEmailError(false);
+    setPasswordError(false);
+    setNameError(false);
+
     try {
+      const usersCollection = collection(db, 'users');
+      const usersSnapshot = await getDocs(usersCollection);
+      let isNicknameTaken = false;
+
+      usersSnapshot.forEach((doc) => {
+        if (doc.data().name.toLowerCase() === name.toLowerCase()) {
+          isNicknameTaken = true;
+        }
+      });
+
+      if (isNicknameTaken) {
+        throw new Error('4');
+      }
+
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         email,
         password
       );
       const user = userCredential.user;
-      
+
       await updateProfile(user, {
         displayName: name,
       });
@@ -45,20 +68,57 @@ const Register = () => {
       });
       navigate('/');
     } catch (error) {
-      console.error('Error registering:', error);
-      Store.addNotification({
-        title: 'Registration failed',
-        message: 'Invalid email or password.',
-        type: 'danger',
-        insert: 'top',
-        container: 'top-right',
-        animationIn: ['animate__animated', 'animate__fadeIn'],
-        animationOut: ['animate__animated', 'animate__fadeOut'],
-        dismiss: {
-          duration: 3000,
-          onScreen: true,
-        },
-      });
+      if (error.message === '4') {
+        setNameError(true);
+        Store.addNotification({
+          title: 'Registration failed',
+          message: 'Nickname is already taken. Please choose another one.',
+          type: 'danger',
+          insert: 'top',
+          container: 'top-right',
+          animationIn: ['animate__animated', 'animate__fadeIn'],
+          animationOut: ['animate__animated', 'animate__fadeOut'],
+          dismiss: {
+            duration: 3000,
+            onScreen: true,
+          },
+        });
+        document.getElementById('name').focus();
+      } else if (error.message.includes('auth/email-already-in-use')) {
+        setEmailError(true);
+        Store.addNotification({
+          title: 'Registration failed',
+          message: 'This email is already in use. Please use another email.',
+          type: 'danger',
+          insert: 'top',
+          container: 'top-right',
+          animationIn: ['animate__animated', 'animate__fadeIn'],
+          animationOut: ['animate__animated', 'animate__fadeOut'],
+          dismiss: {
+            duration: 3000,
+            onScreen: true,
+          },
+        });
+        document.getElementById('email').focus();
+      } else if (error.message.includes('auth/weak-password')) {
+        setPasswordError(true);
+        Store.addNotification({
+          title: 'Registration failed',
+          message: 'Password should be at least 6 characters.',
+          type: 'danger',
+          insert: 'top',
+          container: 'top-right',
+          animationIn: ['animate__animated', 'animate__fadeIn'],
+          animationOut: ['animate__animated', 'animate__fadeOut'],
+          dismiss: {
+            duration: 3000,
+            onScreen: true,
+          },
+        });
+        document.getElementById('password').focus();
+      } else {
+        console.error('Registration error:', error.message);
+      }
     }
   };
 
@@ -85,7 +145,9 @@ const Register = () => {
             onChange={(e) => setName(e.target.value)}
             placeholder='Nickname'
             required
-            className='shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline'
+            className={`shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${
+              nameError ? 'border-red-500' : ''
+            }`}
           />
         </div>
         <div className='mb-4'>
@@ -102,7 +164,9 @@ const Register = () => {
             onChange={(e) => setEmail(e.target.value)}
             placeholder='Email'
             required
-            className='shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline'
+            className={`shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${
+              emailError ? 'border-red-500' : ''
+            }`}
           />
         </div>
         <div className='mb-6'>
@@ -119,7 +183,9 @@ const Register = () => {
             onChange={(e) => setPassword(e.target.value)}
             placeholder='Password'
             required
-            className='shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline'
+            className={`shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline ${
+              passwordError ? 'border-red-500' : ''
+            }`}
           />
         </div>
         <div className='flex items-center justify-between'>
