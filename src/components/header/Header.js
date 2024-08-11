@@ -1,7 +1,17 @@
+import {
+  collection,
+  
+  
+  getDocs,
+  
+  query,
+  where,
+  
+} from 'firebase/firestore';
 import { React, useEffect, useState } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { Link } from 'react-router-dom';
-import { auth, signOut } from '../../firebase';
+import { auth, signOut, db } from '../../firebase';
 
 const Header = () => {
   const [user] = useAuthState(auth);
@@ -10,10 +20,15 @@ const Header = () => {
 
   useEffect(() => {
     if (user) {
-      setPlayer({
-        id: user.uid,
-        name: user.displayName,
-      });
+      const fetchPlayer = async () => {
+        const playersRef = collection(db, 'users');
+        const q = query(playersRef, where('id', '==', user.uid));
+        const querySnapshot = await getDocs(q);
+        querySnapshot.forEach((doc) => {
+          setPlayer({ id: doc.id, ...doc.data() });
+        });
+      };
+      fetchPlayer();
     }
   }, [user]);
 
@@ -31,7 +46,7 @@ const Header = () => {
       <div className='flex items-center gap-4'>
         {user && (
           <Link to={`/player/${player.id}`} className='text-white'>
-            Hello, {user.displayName}
+            Hello, {player.name}
           </Link>
         )}
         {user ? (

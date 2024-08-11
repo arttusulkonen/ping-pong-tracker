@@ -6,14 +6,28 @@ import {
   orderBy,
   query,
   where,
+  setDoc,
 } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Tooltip } from 'react-tooltip';
 import 'react-tooltip/dist/react-tooltip.css';
-import { db } from '../../firebase';
+import { Store } from 'react-notifications-component';
+import { db, auth } from '../../firebase';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import {
+  faLeaf,
+  faMedal,
+  faStar,
+  faFireAlt,
+  faCrown,
+  faShieldAlt,
+  faTrophy,
+  faEdit,
+} from '@fortawesome/free-solid-svg-icons';
 
-const Player = () => {
+const Player = ({ onNameUpdate }) => {
   const { userId } = useParams();
   const [player, setPlayer] = useState(null);
   const [matches, setMatches] = useState([]);
@@ -22,6 +36,9 @@ const Player = () => {
   const [maxWinStreak, setMaxWinStreak] = useState(0);
   const [currentWinStreak, setCurrentWinStreak] = useState(0);
   const [error, setError] = useState(null);
+  const [displayInput, setDisplayInput] = useState(false);
+  const [nameError, setNameError] = useState(false);
+  const [user] = useAuthState(auth);
 
   const getRank = (rating) => {
     if (rating < 1001) return 'Ping Pong Padawan';
@@ -36,21 +53,21 @@ const Player = () => {
   const getMedal = (rank) => {
     switch (rank) {
       case 'Ping Pong Padawan':
-        return '🍃'; // Leaf (symbolizes a beginner)
+        return <FontAwesomeIcon icon={faLeaf} />;
       case 'Table Tennis Trainee':
-        return '🐣'; // Chick (symbolizes a trainee)
+        return <FontAwesomeIcon icon={faMedal} />;
       case 'Racket Rookie':
-        return '🌱'; // Seedling (symbolizes a rookie)
+        return <FontAwesomeIcon icon={faStar} />;
       case 'Paddle Prodigy':
-        return '🔥'; // Fire (symbolizes a prodigy)
+        return <FontAwesomeIcon icon={faFireAlt} />;
       case 'Spin Sensei':
-        return '🌪️'; // Tornado (symbolizes spin mastery)
+        return <FontAwesomeIcon icon={faCrown} />;
       case 'Smash Samurai':
-        return '⚔️'; // Crossed Swords (symbolizes a warrior)
+        return <FontAwesomeIcon icon={faShieldAlt} />;
       case 'Ping Pong Paladin':
-        return '🏅'; // Medal (symbolizes a champion)
+        return <FontAwesomeIcon icon={faTrophy} />;
       default:
-        return '';
+        return null;
     }
   };
 
@@ -68,50 +85,170 @@ const Player = () => {
     `;
   };
 
-  useEffect(() => {
-    const getPlayer = async () => {
-      try {
-        const playerRef = doc(db, 'users', userId);
-        const playerSnap = await getDoc(playerRef);
+  const handleEditClick = () => {
+    setDisplayInput(!displayInput);
+  };
 
-        if (playerSnap.exists()) {
-          setPlayer({
-            ...playerSnap.data(),
-            totalMatches: playerSnap.data().wins + playerSnap.data().losses,
-            id: userId,
-          });
-        } else {
-          setError('Player not found');
+  const handleSaveName = async (e) => {
+    e.preventDefault();
+
+    if (!player.name.trim()) {
+      setNameError(true);
+      Store.addNotification({
+        title: 'Update failed',
+        message: 'Name cannot be empty or just spaces.',
+        type: 'danger',
+        insert: 'top',
+        container: 'top-right',
+        animationIn: ['animate__animated', 'animate__fadeIn'],
+        animationOut: ['animate__animated', 'animate__fadeOut'],
+        dismiss: {
+          duration: 3000,
+          onScreen: true,
+        },
+      });
+      return;
+    }
+
+    try {
+      const usersCollection = collection(db, 'users');
+      const usersSnapshot = await getDocs(usersCollection);
+      let isNicknameTaken = false;
+
+      usersSnapshot.forEach((doc) => {
+        if (doc.data().name.toLowerCase() === player.name.toLowerCase()) {
+          isNicknameTaken = true;
         }
-      } catch (err) {
-        setError('Error fetching player data');
-      } finally {
-        setLoadingPlayer(false);
-      }
-    };
+      });
 
-    const getMatches = async () => {
-      try {
-        const matchesCollection = collection(db, 'matches');
-        const q = query(
-          matchesCollection,
-          where('players', 'array-contains', userId),
-          orderBy('timestamp', 'desc')
+      if (isNicknameTaken) {
+        throw new Error('4');
+      }
+
+      await setDoc(doc(db, 'users', userId), {
+        ...player,
+        name: player.name,
+      });
+
+      const roomsCollection = collection(db, 'rooms');
+      const roomsSnapshot = await getDocs(roomsCollection);
+      roomsSnapshot.forEach(async (roomDoc) => {
+        const roomData = roomDoc.data();
+        const updatedMembers = roomData.members.map((member) =>
+          member.userId === userId ? { ...member, name: player.name } : member
         );
-        const matchesSnapshot = await getDocs(q);
-        const matchesData = matchesSnapshot.docs.map((doc) => doc.data());
 
-        setMatches(matchesData);
-      } catch (err) {
-        setError('Error fetching matches');
-      } finally {
-        setLoadingMatches(false);
+        await setDoc(doc(db, 'rooms', roomDoc.id), {
+          ...roomData,
+          members: updatedMembers,
+        });
+      });
+
+      const matchesCollection = collection(db, 'matches');
+      const matchesSnapshot = await getDocs(matchesCollection);
+      matchesSnapshot.forEach(async (matchDoc) => {
+        const matchData = matchDoc.data();
+        let updatedMatch = { ...matchData };
+
+        if (matchData.player1Id === userId) {
+          updatedMatch = {
+            ...matchData,
+            player1: { ...matchData.player1, name: player.name },
+          };
+        }
+
+        if (matchData.player2Id === userId) {
+          updatedMatch = {
+            ...matchData,
+            player2: { ...matchData.player2, name: player.name },
+          };
+        }
+
+        await setDoc(doc(db, 'matches', matchDoc.id), updatedMatch);
+      });
+
+      onNameUpdate(player.name);
+
+      Store.addNotification({
+        title: 'Success',
+        message: 'Name updated successfully in all collections.',
+        type: 'success',
+        insert: 'top',
+        container: 'top-right',
+        animationIn: ['animate__animated', 'animate__fadeIn'],
+        animationOut: ['animate__animated', 'animate__fadeOut'],
+        dismiss: {
+          duration: 3000,
+          onScreen: true,
+        },
+      });
+    } catch (error) {
+      if (error.message === '4') {
+        setNameError(true);
+        Store.addNotification({
+          title: 'Update failed',
+          message: 'Nickname is already taken. Please choose another one.',
+          type: 'danger',
+          insert: 'top',
+          container: 'top-right',
+          animationIn: ['animate__animated', 'animate__fadeIn'],
+          animationOut: ['animate__animated', 'animate__fadeOut'],
+          dismiss: {
+            duration: 3000,
+            onScreen: true,
+          },
+        });
       }
-    };
+    } finally {
+      setDisplayInput(false);
+      await fetchMatches(); // Refresh matches
+    }
+  };
 
+  const fetchPlayer = async () => {
+    try {
+      const playerRef = doc(db, 'users', userId);
+      const playerSnap = await getDoc(playerRef);
+
+      if (playerSnap.exists()) {
+        setPlayer({
+          ...playerSnap.data(),
+          totalMatches: playerSnap.data().wins + playerSnap.data().losses,
+          id: userId,
+        });
+      } else {
+        setError('Player not found');
+      }
+    } catch (err) {
+      setError('Error fetching player data');
+    } finally {
+      setLoadingPlayer(false);
+    }
+  };
+
+  const fetchMatches = async () => {
+    try {
+      const matchesCollection = collection(db, 'matches');
+      const q = query(
+        matchesCollection,
+        where('players', 'array-contains', userId),
+        orderBy('timestamp', 'desc')
+      );
+      const matchesSnapshot = await getDocs(q);
+      const matchesData = matchesSnapshot.docs.map((doc) => doc.data());
+
+      setMatches(matchesData);
+    } catch (err) {
+      setError('Error fetching matches');
+    } finally {
+      setLoadingMatches(false);
+    }
+  };
+
+  useEffect(() => {
     if (userId) {
-      getPlayer();
-      getMatches();
+      fetchPlayer();
+      fetchMatches();
     }
   }, [userId]);
 
@@ -119,12 +256,12 @@ const Player = () => {
     const calculateWinStreaks = () => {
       let maxWinStreak = 0;
       let currentWinStreak = 0;
-      let tempCurrentWinStreak = 0; 
+      let tempCurrentWinStreak = 0;
 
       const sortedMatches = [...matches].sort(
         (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
       );
-      
+
       for (let match of sortedMatches) {
         const isWinner =
           (match.player1Id === userId && match.winner === match.player1.name) ||
@@ -139,7 +276,7 @@ const Player = () => {
 
       currentWinStreak = tempCurrentWinStreak;
 
-      let tempMaxWinStreak = 0; 
+      let tempMaxWinStreak = 0;
       for (let match of sortedMatches) {
         const isWinner =
           (match.player1Id === userId && match.winner === match.player1.name) ||
@@ -151,7 +288,7 @@ const Player = () => {
             maxWinStreak = tempMaxWinStreak;
           }
         } else {
-          tempMaxWinStreak = 0; 
+          tempMaxWinStreak = 0;
         }
       }
 
@@ -175,7 +312,42 @@ const Player = () => {
       <h1 className='text-3xl font-outfit font-bold mb-6'>Player Profile</h1>
       <div className='bg-white shadow rounded-lg p-6 mb-8 relative'>
         <h2 className='text-2xl font-outfit font-bold mb-4 text-gray-700 flex flex-col sm:flex-row justify-between items-start sm:items-center'>
-          {loadingPlayer ? 'Loading...' : player?.name}
+          <div>
+            <span>{player ? player.name : 'Player Name'}</span>
+            {userId && user?.uid === userId && (
+              <>
+                <button
+                  onClick={handleEditClick}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    marginLeft: '8px',
+                  }}
+                >
+                  <FontAwesomeIcon icon={faEdit} />
+                </button>
+                {displayInput && (
+                  <>
+                    <input
+                      type='text'
+                      className='border border-gray-300 rounded px-2 py-1 ml-2'
+                      value={player ? player.name : ''}
+                      onChange={(e) =>
+                        setPlayer({ ...player, name: e.target.value })
+                      }
+                    />
+                    <button
+                      onClick={handleSaveName}
+                      className='bg-blue-500 text-white rounded px-2 py-1 ml-2'
+                    >
+                      Save
+                    </button>
+                  </>
+                )}
+              </>
+            )}
+          </div>
           {rank && (
             <div className='flex items-center mt-2 sm:mt-0'>
               <span
