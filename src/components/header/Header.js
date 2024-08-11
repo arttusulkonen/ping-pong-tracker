@@ -1,13 +1,4 @@
-import {
-  collection,
-  
-  
-  getDocs,
-  
-  query,
-  where,
-  
-} from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { React, useEffect, useState } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { Link } from 'react-router-dom';
@@ -15,20 +6,24 @@ import { auth, signOut, db } from '../../firebase';
 
 const Header = () => {
   const [user] = useAuthState(auth);
-
-  const [player, setPlayer] = useState({});
+  const [player, setPlayer] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (user) {
       const fetchPlayer = async () => {
+        setLoading(true); 
         const playersRef = collection(db, 'users');
         const q = query(playersRef, where('id', '==', user.uid));
         const querySnapshot = await getDocs(q);
         querySnapshot.forEach((doc) => {
           setPlayer({ id: doc.id, ...doc.data() });
         });
+        setLoading(false);
       };
       fetchPlayer();
+    } else {
+      setLoading(false);
     }
   }, [user]);
 
@@ -44,10 +39,17 @@ const Header = () => {
         </Link>
       </div>
       <div className='flex items-center gap-4'>
-        {user && (
-          <Link to={`/player/${player.id}`} className='text-white'>
-            Hello, {player.name}
-          </Link>
+        {loading ? (
+          <div className='text-white animate-pulse'>
+            <div className='h-4 bg-gray-700 rounded w-24'></div>
+          </div>
+        ) : (
+          user &&
+          player && (
+            <Link to={`/player/${player.id}`} className='text-white'>
+              Hello, {player.name}
+            </Link>
+          )
         )}
         {user ? (
           <button
