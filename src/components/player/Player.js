@@ -19,6 +19,8 @@ const Player = () => {
   const [matches, setMatches] = useState([]);
   const [loadingPlayer, setLoadingPlayer] = useState(true);
   const [loadingMatches, setLoadingMatches] = useState(true);
+  const [maxWinStreak, setMaxWinStreak] = useState(0);
+  const [currentWinStreak, setCurrentWinStreak] = useState(0);
   const [error, setError] = useState(null);
 
   const getRank = (rating) => {
@@ -113,6 +115,53 @@ const Player = () => {
     }
   }, [userId]);
 
+  useEffect(() => {
+    const calculateWinStreaks = () => {
+      let maxWinStreak = 0;
+      let currentWinStreak = 0;
+      let tempCurrentWinStreak = 0; 
+
+      const sortedMatches = [...matches].sort(
+        (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
+      );
+      
+      for (let match of sortedMatches) {
+        const isWinner =
+          (match.player1Id === userId && match.winner === match.player1.name) ||
+          (match.player2Id === userId && match.winner === match.player2.name);
+
+        if (isWinner) {
+          tempCurrentWinStreak++;
+        } else {
+          break;
+        }
+      }
+
+      currentWinStreak = tempCurrentWinStreak;
+
+      let tempMaxWinStreak = 0; 
+      for (let match of sortedMatches) {
+        const isWinner =
+          (match.player1Id === userId && match.winner === match.player1.name) ||
+          (match.player2Id === userId && match.winner === match.player2.name);
+
+        if (isWinner) {
+          tempMaxWinStreak++;
+          if (tempMaxWinStreak > maxWinStreak) {
+            maxWinStreak = tempMaxWinStreak;
+          }
+        } else {
+          tempMaxWinStreak = 0; 
+        }
+      }
+
+      setMaxWinStreak(maxWinStreak);
+      setCurrentWinStreak(currentWinStreak);
+    };
+
+    calculateWinStreaks();
+  }, [matches, userId]);
+
   if (error) {
     return <div className='text-red-500'>{error}</div>;
   }
@@ -153,7 +202,8 @@ const Player = () => {
               <strong>Rating:</strong> {player.rating}
             </p>
             <p className='text-gray-700'>
-              <strong>Total Matches:</strong> {player.totalMatches ? player.totalMatches : 0}
+              <strong>Total Matches:</strong>{' '}
+              {player.totalMatches ? player.totalMatches : 0}
             </p>
             <p className='text-gray-700'>
               <strong>Wins:</strong> {player.wins ? player.wins : 0}
@@ -166,6 +216,13 @@ const Player = () => {
               {player.totalMatches
                 ? `${((player.wins / player.totalMatches) * 100).toFixed(2)}%`
                 : '0%'}
+            </p>
+
+            <p className='text-gray-700'>
+              <strong>Current Win Streak:</strong> {currentWinStreak}
+            </p>
+            <p className='text-gray-700'>
+              <strong>Max Win Streak:</strong> {maxWinStreak}
             </p>
           </>
         )}
