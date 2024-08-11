@@ -12,26 +12,36 @@ const Header = () => {
   useEffect(() => {
     const fetchPlayer = async () => {
       if (user) {
-        setLoading(true); 
+        setLoading(true);
         try {
           const playersRef = collection(db, 'users');
           const q = query(playersRef, where('id', '==', user.uid));
           const querySnapshot = await getDocs(q);
+  
           querySnapshot.forEach((doc) => {
+            console.log('Player data:', doc.data());  
             setPlayer({ id: doc.id, ...doc.data() });
           });
         } catch (error) {
-          console.error('Error fetching player data: ', error);
+          console.error("Error fetching player data: ", error);
         } finally {
-          setLoading(false); 
+          setLoading(false);
         }
       } else {
-        setLoading(false); 
+        setLoading(false);
       }
     };
-
+  
     fetchPlayer();
   }, [user]);
+
+  useEffect(() => {
+    if (player) {
+      console.log('Player:', player);
+    }
+  }, [player]);
+  
+  
 
   const handleLogout = async () => {
     await signOut(auth);
