@@ -1,56 +1,21 @@
-import {
-  collection,
-  getDocs,
-  query,
-  where,
-} from 'firebase/firestore';
 import { React, useEffect, useState } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { Link } from 'react-router-dom';
-import { auth, signOut, db } from '../../firebase';
+import { auth, signOut } from '../../firebase';
 
 const Header = () => {
-  const [user, loading] = useAuthState(auth);
+  const [user] = useAuthState(auth);
+
   const [player, setPlayer] = useState({});
-  const [playerLoading, setPlayerLoading] = useState(true);
 
   useEffect(() => {
-    const fetchPlayer = async () => {
-      if (loading) {
-        console.log("User is still loading.");
-        return; 
-      }
-
-      if (!user) {
-        console.log("No user is logged in.");
-        setPlayerLoading(false); 
-        return;
-      }
-
-      console.log('Fetching player data');
-      try {
-        const playersRef = collection(db, 'users');
-        const q = query(playersRef, where('id', '==', user.uid));
-        const querySnapshot = await getDocs(q);
-
-        if (querySnapshot.empty) {
-          console.log('No matching player found');
-        } else {
-          querySnapshot.forEach((doc) => {
-            setPlayer({ id: doc.id, ...doc.data() });
-            console.log('Player data:', doc.data());
-          });
-        }
-
-        setPlayerLoading(false); 
-      } catch (error) {
-        console.error("Error fetching player data: ", error);
-        setPlayerLoading(false); 
-      }
-    };
-
-    fetchPlayer();
-  }, [user, loading]);
+    if (user) {
+      setPlayer({
+        id: user.uid,
+        name: user.displayName,
+      });
+    }
+  }, [user]);
 
   const handleLogout = () => {
     signOut(auth);
@@ -64,14 +29,10 @@ const Header = () => {
         </Link>
       </div>
       <div className='flex items-center gap-4'>
-        {playerLoading ? (
-          <div>Loading...</div>
-        ) : user && player?.name ? (
+        {user && (
           <Link to={`/player/${player.id}`} className='text-white'>
-            Hello, {player.name}
+            Hello, {user.displayName}
           </Link>
-        ) : (
-          <div>No user data available</div>
         )}
         {user ? (
           <button
@@ -94,4 +55,3 @@ const Header = () => {
 };
 
 export default Header;
-

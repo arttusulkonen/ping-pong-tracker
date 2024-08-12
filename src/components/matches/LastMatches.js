@@ -12,8 +12,7 @@ const LastMatches = ({ roomId, updateMatches }) => {
       const matchesCollection = collection(db, 'matches');
       const q = query(
         matchesCollection,
-        where('roomId', '==', roomId),
-        orderBy('timestamp', 'desc')
+        where('roomId', '==', roomId)
       );
       const matchesSnapshot = await getDocs(q);
 
@@ -23,7 +22,17 @@ const LastMatches = ({ roomId, updateMatches }) => {
         matchesData.push(data);
       });
 
-      setMatches(matchesData);
+      const sortedMatches = matchesData.sort((a, b) => {
+        const [dayA, monthA, yearA, hourA, minuteA, secondA] = a.timestamp.split(/[\s.:]/);
+        const [dayB, monthB, yearB, hourB, minuteB, secondB] = b.timestamp.split(/[\s.:]/);
+
+        const dateA = new Date(yearA, monthA - 1, dayA, hourA, minuteA, secondA);
+        const dateB = new Date(yearB, monthB - 1, dayB, hourB, minuteB, secondB);
+
+        return dateB - dateA;
+      });
+
+      setMatches(sortedMatches);
       setLoading(false);
     };
 

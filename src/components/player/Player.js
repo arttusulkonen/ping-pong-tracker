@@ -3,7 +3,6 @@ import {
   doc,
   getDoc,
   getDocs,
-  orderBy,
   query,
   where,
   setDoc,
@@ -16,9 +15,7 @@ import { Store } from 'react-notifications-component';
 import { db, auth } from '../../firebase';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import {
-  faEdit,
-} from '@fortawesome/free-solid-svg-icons';
+import { faEdit } from '@fortawesome/free-solid-svg-icons';
 
 const Player = ({ onNameUpdate }) => {
   const { userId } = useParams();
@@ -221,19 +218,29 @@ const Player = ({ onNameUpdate }) => {
       const matchesCollection = collection(db, 'matches');
       const q = query(
         matchesCollection,
-        where('players', 'array-contains', userId),
-        orderBy('timestamp', 'desc')
+        where('players', 'array-contains', userId)
       );
       const matchesSnapshot = await getDocs(q);
       const matchesData = matchesSnapshot.docs.map((doc) => doc.data());
-
-      setMatches(matchesData);
+  
+      const sortedMatches = matchesData.sort((a, b) => {
+        const [dayA, monthA, yearA, hourA, minuteA, secondA] = a.timestamp.split(/[\s.:]/);
+        const [dayB, monthB, yearB, hourB, minuteB, secondB] = b.timestamp.split(/[\s.:]/);
+  
+        const dateA = new Date(yearA, monthA - 1, dayA, hourA, minuteA, secondA);
+        const dateB = new Date(yearB, monthB - 1, dayB, hourB, minuteB, secondB);
+  
+        return dateB - dateA;
+      });
+  
+      setMatches(sortedMatches);
     } catch (err) {
       setError('Error fetching matches');
     } finally {
       setLoadingMatches(false);
     }
   }, [userId]);
+  
 
   useEffect(() => {
     if (userId) {
