@@ -1,4 +1,9 @@
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import {
+  collection,
+  getDocs,
+  query,
+  where,
+} from 'firebase/firestore';
 import { React, useEffect, useState } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { Link } from 'react-router-dom';
@@ -12,12 +17,13 @@ const Header = () => {
   useEffect(() => {
     const fetchPlayer = async () => {
       if (loading) {
-        console.log('User is still loading.');
-        return;
+        console.log("User is still loading.");
+        return; 
       }
 
       if (!user) {
-        console.log('No user is logged in.');
+        console.log("No user is logged in.");
+        setPlayerLoading(false); 
         return;
       }
 
@@ -26,22 +32,28 @@ const Header = () => {
         const playersRef = collection(db, 'users');
         const q = query(playersRef, where('id', '==', user.uid));
         const querySnapshot = await getDocs(q);
-        querySnapshot.forEach((doc) => {
-          setPlayer({ id: doc.id, ...doc.data() });
-          console.log('Player data:', doc.data());
-        });
-        setPlayerLoading(false);
+
+        if (querySnapshot.empty) {
+          console.log('No matching player found');
+        } else {
+          querySnapshot.forEach((doc) => {
+            setPlayer({ id: doc.id, ...doc.data() });
+            console.log('Player data:', doc.data());
+          });
+        }
+
+        setPlayerLoading(false); 
       } catch (error) {
-        console.error('Error fetching player data: ', error);
-        setPlayerLoading(false);
+        console.error("Error fetching player data: ", error);
+        setPlayerLoading(false); 
       }
     };
 
     fetchPlayer();
   }, [user, loading]);
 
-  const handleLogout = async () => {
-    await signOut(auth);
+  const handleLogout = () => {
+    signOut(auth);
   };
 
   return (
@@ -52,12 +64,22 @@ const Header = () => {
         </Link>
       </div>
       <div className='flex items-center gap-4'>
-        {loading || playerLoading ? (
+        {playerLoading ? (
           <div>Loading...</div>
-        ) : user ? (
+        ) : user && player?.name ? (
           <Link to={`/player/${player.id}`} className='text-white'>
             Hello, {player.name}
           </Link>
+        ) : (
+          <div>No user data available</div>
+        )}
+        {user ? (
+          <button
+            onClick={handleLogout}
+            className='bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded'
+          >
+            Sign out
+          </button>
         ) : (
           <Link
             to='/login'
@@ -66,17 +88,10 @@ const Header = () => {
             Log in
           </Link>
         )}
-        {user && (
-          <button
-            onClick={handleLogout}
-            className='bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded'
-          >
-            Sign out
-          </button>
-        )}
       </div>
     </header>
   );
 };
 
 export default Header;
+
