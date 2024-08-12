@@ -17,13 +17,6 @@ import { db, auth } from '../../firebase';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import {
-  faLeaf,
-  faMedal,
-  faStar,
-  faFireAlt,
-  faCrown,
-  faShieldAlt,
-  faTrophy,
   faEdit,
 } from '@fortawesome/free-solid-svg-icons';
 
@@ -52,21 +45,21 @@ const Player = ({ onNameUpdate }) => {
   const getMedal = (rank) => {
     switch (rank) {
       case 'Ping Pong Padawan':
-        return <FontAwesomeIcon icon={faLeaf} />;
+        return '🍃'; // Leaf (symbolizes a beginner)
       case 'Table Tennis Trainee':
-        return <FontAwesomeIcon icon={faMedal} />;
+        return '🐣'; // Chick (symbolizes a trainee)
       case 'Racket Rookie':
-        return <FontAwesomeIcon icon={faStar} />;
+        return '🌱'; // Seedling (symbolizes a rookie)
       case 'Paddle Prodigy':
-        return <FontAwesomeIcon icon={faFireAlt} />;
+        return '🔥'; // Fire (symbolizes a prodigy)
       case 'Spin Sensei':
-        return <FontAwesomeIcon icon={faCrown} />;
+        return '🌪️'; // Tornado (symbolizes spin mastery)
       case 'Smash Samurai':
-        return <FontAwesomeIcon icon={faShieldAlt} />;
+        return '⚔️'; // Crossed Swords (symbolizes a warrior)
       case 'Ping Pong Paladin':
-        return <FontAwesomeIcon icon={faTrophy} />;
+        return '🏅'; // Medal (symbolizes a champion)
       default:
-        return null;
+        return '';
     }
   };
 
