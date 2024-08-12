@@ -5,43 +5,40 @@ import { Link } from 'react-router-dom';
 import { auth, signOut, db } from '../../firebase';
 
 const Header = () => {
-  const [user] = useAuthState(auth);
-  const [player, setPlayer] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [user, loading] = useAuthState(auth);
+  const [player, setPlayer] = useState({});
+  const [playerLoading, setPlayerLoading] = useState(true);
 
   useEffect(() => {
     const fetchPlayer = async () => {
-      if (user) {
-        setLoading(true);
-        try {
-          const playersRef = collection(db, 'users');
-          const q = query(playersRef, where('id', '==', user.uid));
-          const querySnapshot = await getDocs(q);
-  
-          querySnapshot.forEach((doc) => {
-            console.log('Player data:', doc.data());  
-            setPlayer({ id: doc.id, ...doc.data() });
-          });
-        } catch (error) {
-          console.error("Error fetching player data: ", error);
-        } finally {
-          setLoading(false);
-        }
-      } else {
-        setLoading(false);
+      if (loading) {
+        console.log('User is still loading.');
+        return;
+      }
+
+      if (!user) {
+        console.log('No user is logged in.');
+        return;
+      }
+
+      console.log('Fetching player data');
+      try {
+        const playersRef = collection(db, 'users');
+        const q = query(playersRef, where('id', '==', user.uid));
+        const querySnapshot = await getDocs(q);
+        querySnapshot.forEach((doc) => {
+          setPlayer({ id: doc.id, ...doc.data() });
+          console.log('Player data:', doc.data());
+        });
+        setPlayerLoading(false);
+      } catch (error) {
+        console.error('Error fetching player data: ', error);
+        setPlayerLoading(false);
       }
     };
-  
-    fetchPlayer();
-  }, [user]);
 
-  useEffect(() => {
-    if (player) {
-      console.log('Player:', player);
-    }
-  }, [player]);
-  
-  
+    fetchPlayer();
+  }, [user, loading]);
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -55,25 +52,12 @@ const Header = () => {
         </Link>
       </div>
       <div className='flex items-center gap-4'>
-        {loading ? (
-          <div className='text-white animate-pulse'>
-            <div className='h-4 bg-gray-700 rounded w-24'></div>
-          </div>
-        ) : (
-          user &&
-          player && (
-            <Link to={`/player/${player.id}`} className='text-white'>
-              Hello, {player.name}
-            </Link>
-          )
-        )}
-        {user ? (
-          <button
-            onClick={handleLogout}
-            className='bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded'
-          >
-            Sign out
-          </button>
+        {loading || playerLoading ? (
+          <div>Loading...</div>
+        ) : user ? (
+          <Link to={`/player/${player.id}`} className='text-white'>
+            Hello, {player.name}
+          </Link>
         ) : (
           <Link
             to='/login'
@@ -81,6 +65,14 @@ const Header = () => {
           >
             Log in
           </Link>
+        )}
+        {user && (
+          <button
+            onClick={handleLogout}
+            className='bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded'
+          >
+            Sign out
+          </button>
         )}
       </div>
     </header>
