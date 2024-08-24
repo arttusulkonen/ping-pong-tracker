@@ -1,21 +1,21 @@
+import { faEdit } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   collection,
   doc,
   getDoc,
   getDocs,
   query,
-  where,
   setDoc,
+  where,
 } from 'firebase/firestore';
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { Store } from 'react-notifications-component';
 import { useParams } from 'react-router-dom';
 import { Tooltip } from 'react-tooltip';
 import 'react-tooltip/dist/react-tooltip.css';
-import { Store } from 'react-notifications-component';
-import { db, auth } from '../../firebase';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { useAuthState } from 'react-firebase-hooks/auth';
-import { faEdit } from '@fortawesome/free-solid-svg-icons';
+import { auth, db } from '../../firebase';
 
 const Player = ({ onNameUpdate }) => {
   const { userId } = useParams();
@@ -31,9 +31,9 @@ const Player = ({ onNameUpdate }) => {
 
   const getRank = (rating) => {
     if (rating < 1001) return 'Ping Pong Padawan';
-    if (rating < 1200) return 'Table Tennis Trainee';
-    if (rating < 1400) return 'Racket Rookie';
-    if (rating < 1600) return 'Paddle Prodigy';
+    if (rating < 1100) return 'Table Tennis Trainee';
+    if (rating < 1200) return 'Racket Rookie';
+    if (rating < 1400) return 'Paddle Prodigy';
     if (rating < 1800) return 'Spin Sensei';
     if (rating < 2000) return 'Smash Samurai';
     return 'Ping Pong Paladin';
