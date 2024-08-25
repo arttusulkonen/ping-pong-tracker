@@ -27,7 +27,6 @@ const Room = () => {
   const [room, setRoom] = useState({ name: 'Loading...' });
   const [user] = useAuthState(auth);
   const [updateMatches, setUpdateMatches] = useState(false);
-  const [isPlayerMember, setIsPlayerMember] = useState(false);
 
   const handleInvite = async () => {
     const usersCollection = collection(db, 'users');
@@ -142,10 +141,6 @@ const Room = () => {
           if (data.creator === currentUser.uid) {
             setUserRole('admin');
           }
-        }
-
-        if (data.members.some((member) => member.userId === currentUser?.uid)) {
-          setIsPlayerMember(true);
         }
         
         setLoading(false);
@@ -295,7 +290,7 @@ const Room = () => {
         </div>
       </div>
 
-      {user && isPlayerMember && (
+      {(userRole === 'admin' || userRole === 'editor') && (
         <MatchForm
           roomId={roomId}
           updatePlayerList={updatePlayerList}

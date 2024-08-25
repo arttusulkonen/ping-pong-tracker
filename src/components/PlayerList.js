@@ -21,6 +21,12 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
     setMembers(players);
   }, [players]);
 
+  const deletePlayerConfirmationModal = (userId) => {
+    if (window.confirm('Are you sure you want to delete this player?')) {
+      deletePlayer(userId);
+    }
+  };
+  
   const deletePlayer = async (userId) => {
     try {
       const roomDoc = await getDoc(doc(db, 'rooms', roomId));
@@ -178,7 +184,7 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
                       {(userRole === 'admin' || userRole === 'editor') && (
                         <td className='py-4 px-6 flex justify-end text-sm font-medium whitespace-nowrap'>
                           <button
-                            onClick={() => deletePlayer(player.userId)}
+                            onClick={() => deletePlayerConfirmationModal(player.userId)}
                             className='flex items-center justify-end bg-gray-100 text-gray-800 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 transition duration-200 ease-in-out rounded px-2 py-1'
                           >
                             <svg
