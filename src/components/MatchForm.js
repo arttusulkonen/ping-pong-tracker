@@ -338,11 +338,10 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
   };
 
   return (
-    <div className="block p-6 bg-surface-dark rounded-lg">
+    <div className="block bg-surface-dark rounded-lg">
       <h2 className="text-2xl font-bold font-outfit text-center mb-6">Add Match</h2>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Выпадающие списки для выбора игроков отображаются только один раз */}
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div>
             <label className="block text-sm font-semibold mb-2" htmlFor="player1">
@@ -387,9 +386,8 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
           </div>
         </div>
 
-        {/* Ввод очков для каждого матча */}
         {matches.map((match, index) => (
-          <div key={index} className="grid grid-cols-[1fr_1fr_auto] gap-4 mb-4 items-center">
+          <div key={index} className="grid grid-cols-2 gap-4 mb-4 relative">
             <div>
               <input
                 type="number"
@@ -426,7 +424,7 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
               <button
                 type="button"
                 onClick={() => removeMatch(index)}
-                className="text-red-500 hover:text-red-700 transition-colors duration-200 ml-2"
+                className="text-red-500 hover:text-red-700 transition-colors duration-200 ml-2 absolute top-1/2 transform -translate-y-1/2 -right-6"
               >
                 <FaTrash />
               </button>
@@ -447,7 +445,7 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
             type="submit"
             className="bg-green-500 text-white font-semibold py-3 px-8 rounded-md hover:bg-green-600 transition-colors duration-200"
           >
-            Submit Matches
+            Submit Match(es)
           </button>
         </div>
       </form>
