@@ -140,6 +140,13 @@ const Room = () => {
         if (currentUser) {
           if (data.creator === currentUser.uid) {
             setUserRole('admin');
+          } else {
+            const member = data.members.find(
+              (member) => member.userId === currentUser.uid
+            );
+            if (member) {
+              setUserRole(member.role);
+            }
           }
         }
         

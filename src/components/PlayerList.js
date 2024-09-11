@@ -1,5 +1,13 @@
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import React, { useEffect, useState } from 'react';
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  updateDoc,
+  where,
+} from 'firebase/firestore';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Tooltip } from 'react-tooltip';
 import 'react-tooltip/dist/react-tooltip.css';
@@ -7,6 +15,7 @@ import { db } from '../firebase';
 
 const PlayerList = ({ players, loading, userRole, roomId }) => {
   const [members, setMembers] = useState([]);
+  const [updatedStats, setUpdatedStats] = useState({});
 
   const getHiddenRankExplanations = () => {
     return `
@@ -16,17 +25,133 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
       </div>
     `;
   };
+  
+  const calculateStatsForRoom = useCallback(
+    async (roomId) => {
+      try {
+        const q = query(
+          collection(db, 'matches'),
+          where('roomId', '==', roomId)
+        );
+        const matchesSnapshot = await getDocs(q);
+
+        const playerStats = {};
+
+        matchesSnapshot.forEach((doc) => {
+          const match = doc.data();
+          const { player1, player2, winner } = match;
+
+          const player1Member = members.find(
+            (member) => member.userId === match.player1Id
+          );
+          const player2Member = members.find(
+            (member) => member.userId === match.player2Id
+          );
+
+          if (!player1Member || !player2Member) {
+            console.warn(
+              'Игрок не найден в members:',
+              match.player1Id,
+              match.player2Id
+            );
+            return;
+          }
+
+          if (!playerStats[match.player1Id]) {
+            playerStats[match.player1Id] = {
+              name: player1.name,
+              wins: 0,
+              losses: 0,
+              rating: 1000,
+            };
+          }
+          if (!playerStats[match.player2Id]) {
+            playerStats[match.player2Id] = {
+              name: player2.name,
+              wins: 0,
+              losses: 0,
+              rating: 1000,
+            };
+          }
+
+          playerStats[match.player1Id].rating += player1.addedPoints;
+          if (winner === player1.name) {
+            playerStats[match.player1Id].wins += 1;
+          } else {
+            playerStats[match.player1Id].losses += 1;
+          }
+
+          playerStats[match.player2Id].rating += player2.addedPoints;
+          if (winner === player2.name) {
+            playerStats[match.player2Id].wins += 1;
+          } else {
+            playerStats[match.player2Id].losses += 1;
+          }
+        });
+
+        const updatedMembers = members.map((member) => {
+          const stats = playerStats[member.userId] || {
+            wins: 0,
+            losses: 0,
+            rating: 1000,
+          };
+          return {
+            ...member,
+            wins: stats.wins,
+            losses: stats.losses,
+            rating: stats.rating,
+          };
+        });
+
+        setUpdatedStats(updatedMembers);
+      } catch (error) {
+        console.error('Error fetching matches: ', error);
+      }
+    },
+    [members]
+  );
 
   useEffect(() => {
     setMembers(players);
-  }, [players]);
+    if (roomId) {
+      calculateStatsForRoom(roomId);
+    }
+  }, [players, roomId, calculateStatsForRoom]);
+
+  const updateRoomMembers = async () => {
+    try {
+      const roomRef = doc(db, 'rooms', roomId);
+      const roomDoc = await getDoc(roomRef);
+
+      if (!roomDoc.exists()) {
+        console.error(`Room with ID ${roomId} not found.`);
+        return;
+      }
+
+      const roomData = roomDoc.data();
+      const updatedMembers = updatedStats.map((player) => ({
+        ...roomData.members.find((m) => m.userId === player.userId),
+        wins: player.wins,
+        losses: player.losses,
+        rating: player.rating,
+      }));
+
+      await updateDoc(roomRef, {
+        members: updatedMembers,
+      });
+
+      console.log('Room data updated successfully.');
+    } catch (error) {
+      console.error('Error updating room members:', error);
+    }
+  };
 
   const deletePlayerConfirmationModal = (userId) => {
     if (window.confirm('Are you sure you want to delete this player?')) {
       deletePlayer(userId);
     }
   };
-  
+
   const deletePlayer = async (userId) => {
     try {
       const roomDoc = await getDoc(doc(db, 'rooms', roomId));
@@ -184,7 +309,9 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
                       {(userRole === 'admin' || userRole === 'editor') && (
                         <td className='py-4 px-6 flex justify-end text-sm font-medium whitespace-nowrap'>
                           <button
-                            onClick={() => deletePlayerConfirmationModal(player.userId)}
+                            onClick={() =>
+                              deletePlayerConfirmationModal(player.userId)
+                            }
                             className='flex items-center justify-end bg-gray-100 text-gray-800 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 transition duration-200 ease-in-out rounded px-2 py-1'
                           >
                             <svg
@@ -208,6 +335,17 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
                 )}
               </tbody>
             </table>
+
+            {(userRole === 'admin' || userRole === 'editor') && (
+              <div className='flex justify-end mt-4 hidden'>
+                <button
+                  onClick={updateRoomMembers}
+                  className='bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 focus:outline-none'
+                >
+                  Update Room Data
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

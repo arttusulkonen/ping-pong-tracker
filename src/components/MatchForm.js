@@ -7,6 +7,7 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
+import { FaTrash } from 'react-icons/fa'; // Importing the trash icon
 import { Store } from 'react-notifications-component';
 import { db } from '../firebase';
 
@@ -128,6 +129,23 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
   // Handles form submission and processes each match result
   const handleSubmit = async (e) => {
     e.preventDefault(); // Prevents the default form submission behavior
+
+    // Validate that both inputs are filled for all matches
+    for (const match of matches) {
+      if (!match.score1 || !match.score2) {
+        Store.addNotification({
+          title: 'Error',
+          message: 'Please fill in both scores for all matches.',
+          type: 'danger',
+          insert: 'top',
+          container: 'top-right',
+          animationIn: ['animate__animated', 'animate__fadeIn'],
+          animationOut: ['animate__animated', 'animate__fadeOut'],
+          dismiss: { duration: 3000, onScreen: true },
+        });
+        return;
+      }
+    }
 
     for (const match of matches) {
       const { score1, score2 } = match;
@@ -314,22 +332,29 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
     setMatches([...matches, { score1: '', score2: '' }]);
   };
 
+  const removeMatch = (index) => {
+    const updatedMatches = matches.filter((_, i) => i !== index);
+    setMatches(updatedMatches);
+  };
+
   return (
-    <div className="block -m-1.5 overflow-x-auto bg-surface-dark shadow-4 py-6">
-      <h2 className="text-xl font-outfit font-bold mb-4">Add Match</h2>
-      <form onSubmit={handleSubmit}>
-        <div className="flex gap-4 mb-4">
-          {/* Player 1 section */}
-          <div className="flex flex-col w-1/2">
-            <label className="block text-sm font-bold mb-2" htmlFor="player1">
+    <div className="block p-6 bg-surface-dark rounded-lg">
+      <h2 className="text-2xl font-bold font-outfit text-center mb-6">Add Match</h2>
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Выпадающие списки для выбора игроков отображаются только один раз */}
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block text-sm font-semibold mb-2" htmlFor="player1">
               Player 1
             </label>
             <select
-              className="w-full bg-surface-light text-black px-4 py-2 border-black border-2 capitalize"
+              id="player1"
+              className="w-full bg-gray-100 text-black px-4 py-2 border border-gray-300 rounded-md"
               value={player1}
               onChange={(e) => setPlayer1(e.target.value)}
             >
-              <option value="">Select a player 1</option>
+              <option value="">Select Player 1</option>
               {players
                 .filter((player) => player.name !== player2)
                 .map((player) => (
@@ -338,39 +363,19 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
                   </option>
                 ))}
             </select>
-  
-            {/* Inputs for player 1's scores */}
-            <div className="flex flex-col gap-2 mt-4">
-              {matches.map((match, index) => (
-                <input
-                  key={`score1-${index}`}
-                  type="number"
-                  className="bg-surface-light text-black px-4 py-2 border-black border-2"
-                  value={match.score1}
-                  onChange={(e) =>
-                    setMatches(
-                      matches.map((m, i) =>
-                        i === index ? { ...m, score1: e.target.value } : m
-                      )
-                    )
-                  }
-                  placeholder={`Score ${index + 1}`}
-                />
-              ))}
-            </div>
           </div>
-  
-          {/* Player 2 section */}
-          <div className="flex flex-col w-1/2">
-            <label className="block text-sm font-bold mb-2" htmlFor="player2">
+
+          <div>
+            <label className="block text-sm font-semibold mb-2" htmlFor="player2">
               Player 2
             </label>
             <select
-              className="w-full bg-surface-light text-black px-4 py-2 border-black border-2 capitalize"
+              id="player2"
+              className="w-full bg-gray-100 text-black px-4 py-2 border border-gray-300 rounded-md"
               value={player2}
               onChange={(e) => setPlayer2(e.target.value)}
             >
-              <option value="">Select a player 2</option>
+              <option value="">Select Player 2</option>
               {players
                 .filter((player) => player.name !== player1)
                 .map((player) => (
@@ -379,41 +384,68 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
                   </option>
                 ))}
             </select>
-  
-            {/* Inputs for player 2's scores */}
-            <div className="flex flex-col gap-2 mt-4">
-              {matches.map((match, index) => (
-                <input
-                  key={`score2-${index}`}
-                  type="number"
-                  className="bg-surface-light text-black px-4 py-2 border-black border-2"
-                  value={match.score2}
-                  onChange={(e) =>
-                    setMatches(
-                      matches.map((m, i) =>
-                        i === index ? { ...m, score2: e.target.value } : m
-                      )
-                    )
-                  }
-                  placeholder={`Score ${index + 1}`}
-                />
-              ))}
-            </div>
           </div>
         </div>
-  
+
+        {/* Ввод очков для каждого матча */}
+        {matches.map((match, index) => (
+          <div key={index} className="grid grid-cols-[1fr_1fr_auto] gap-4 mb-4 items-center">
+            <div>
+              <input
+                type="number"
+                className="w-full bg-gray-100 text-black px-4 py-2 border border-gray-300 rounded-md"
+                value={match.score1}
+                onChange={(e) =>
+                  setMatches(
+                    matches.map((m, i) =>
+                      i === index ? { ...m, score1: e.target.value } : m
+                    )
+                  )
+                }
+                placeholder={`Player 1 Score ${index + 1}`}
+              />
+            </div>
+
+            <div>
+              <input
+                type="number"
+                className="w-full bg-gray-100 text-black px-4 py-2 border border-gray-300 rounded-md"
+                value={match.score2}
+                onChange={(e) =>
+                  setMatches(
+                    matches.map((m, i) =>
+                      i === index ? { ...m, score2: e.target.value } : m
+                    )
+                  )
+                }
+                placeholder={`Player 2 Score ${index + 1}`}
+              />
+            </div>
+
+            {index > 0 && (
+              <button
+                type="button"
+                onClick={() => removeMatch(index)}
+                className="text-red-500 hover:text-red-700 transition-colors duration-200 ml-2"
+              >
+                <FaTrash />
+              </button>
+            )}
+          </div>
+        ))}
+
         <button
           type="button"
-          className="font-sports uppercase bg-white text-black border-t-1 border-l-1 border-b-4 border-r-4 border-black mx-4 px-4 py-2 active:border-b-0 active:border-r-0 active:border-t-4 active:border-l-4 selectable"
+          className="w-full md:w-auto bg-blue-500 text-white font-semibold py-2 px-6 rounded-md hover:bg-blue-600 transition-colors duration-200"
           onClick={addMatch}
         >
           + Add another match
         </button>
-  
-        <div className="col-start-1 col-span-full font-medium tracking-wider text-lg md:text-2xl flex justify-center mt-8">
+
+        <div className="flex justify-center mt-8">
           <button
             type="submit"
-            className="font-sports uppercase bg-white text-black border-t-1 border-l-1 border-b-4 border-r-4 border-black mx-4 px-4 py-2 active:border-b-0 active:border-r-0 active:border-t-4 active:border-l-4 selectable"
+            className="bg-green-500 text-white font-semibold py-3 px-8 rounded-md hover:bg-green-600 transition-colors duration-200"
           >
             Submit Matches
           </button>
@@ -421,7 +453,6 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
       </form>
     </div>
   );
-  
 };
 
 export default MatchForm;
