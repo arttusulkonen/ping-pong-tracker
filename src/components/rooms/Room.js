@@ -43,7 +43,7 @@ const Room = () => {
         .sort((a, b) => a.name.localeCompare(b.name)); 
       setUsersList(filteredUsers);
     };
-
+    updatePlayerList();
     fetchUsers();
   }, [members]);
 
