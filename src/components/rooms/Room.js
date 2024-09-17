@@ -89,7 +89,6 @@ const Room = () => {
         const isAlreadyMember = updatedMembers.some(
           (member) => member.userId === userId
         );
-
         if (!isAlreadyMember) {
           updatedMembers.push({
             userId: userId,
@@ -139,13 +138,14 @@ const Room = () => {
       const roomData = roomDoc.data();
       const playerPromises = roomData.members.map(async (member) => {
         const userDoc = await getDoc(doc(db, 'users', member.userId));
-
+        const userData = userDoc.data();
         return {
           userId: userDoc.id,
           ...userDoc.data(),
           rating: member.rating,
           wins: member.wins,
           losses: member.losses,
+          totalRating: userData.rating,
         };
       });
       const playerList = await Promise.all(playerPromises);

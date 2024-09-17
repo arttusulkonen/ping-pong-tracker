@@ -42,19 +42,19 @@ const Player = ({ onNameUpdate }) => {
   const getMedal = (rank) => {
     switch (rank) {
       case 'Ping Pong Padawan':
-        return '🍃'; // Leaf (symbolizes a beginner)
+        return '<img class="w-[180px]" src="/img/ping-pong-padawan.png" alt="Ping Pong Padawan" />';
       case 'Table Tennis Trainee':
-        return '🐣'; // Chick (symbolizes a trainee)
+        return '<img class="w-[180px]" src="/img/table-tennis-trainee.png" alt="Table Tennis Trainee" />';
       case 'Racket Rookie':
-        return '🌱'; // Seedling (symbolizes a rookie)
+        return '<img class="w-[180px]" src="/img/racket-rookie.png" alt="Racket Rookie" />';
       case 'Paddle Prodigy':
-        return '🔥'; // Fire (symbolizes a prodigy)
+        return '<img class="w-[180px]" src="/img/paddle-prodigy.png" alt="Paddle Prodigy" />';
       case 'Spin Sensei':
-        return '🌪️'; // Tornado (symbolizes spin mastery)
+        return '<img class="w-[180px]" src="/img/spin-sensei.png" alt="Spin Sensei" />';
       case 'Smash Samurai':
-        return '⚔️'; // Crossed Swords (symbolizes a warrior)
+        return '<img class="w-[180px]" src="/img/smash-samurai.png" alt="Smash Samurai" />';
       case 'Ping Pong Paladin':
-        return '🏅'; // Medal (symbolizes a champion)
+        return '<img class="w-[180px]" src="/img/ping-pong-paladin.png" alt="Ping Pong Paladin" />';
       default:
         return '';
     }
@@ -64,10 +64,10 @@ const Player = ({ onNameUpdate }) => {
     return `
       <div class="tooltip-content font-outfit p-2 text-base">
         <div><strong>Ping Pong Padawan:</strong> Less than 1001 points</div>
-        <div><strong>Table Tennis Trainee:</strong> 1001-1199 points</div>
-        <div><strong>Racket Rookie:</strong> 1200-1399 points</div>
-        <div><strong>Paddle Prodigy:</strong> 1400-1599 points</div>
-        <div><strong>Spin Sensei:</strong> 1600-1799 points</div>
+        <div><strong>Table Tennis Trainee:</strong> 1001-1099 points</div>
+        <div><strong>Racket Rookie:</strong> 1100-1199 points</div>
+        <div><strong>Paddle Prodigy:</strong> 1200-1399 points</div>
+        <div><strong>Spin Sensei:</strong> 1400-1799 points</div>
         <div><strong>Smash Samurai:</strong> 1800-1999 points</div>
         <div><strong>Ping Pong Paladin:</strong> 2000+ points</div>
       </div>
@@ -222,17 +222,33 @@ const Player = ({ onNameUpdate }) => {
       );
       const matchesSnapshot = await getDocs(q);
       const matchesData = matchesSnapshot.docs.map((doc) => doc.data());
-  
+
       const sortedMatches = matchesData.sort((a, b) => {
-        const [dayA, monthA, yearA, hourA, minuteA, secondA] = a.timestamp.split(/[\s.:]/);
-        const [dayB, monthB, yearB, hourB, minuteB, secondB] = b.timestamp.split(/[\s.:]/);
-  
-        const dateA = new Date(yearA, monthA - 1, dayA, hourA, minuteA, secondA);
-        const dateB = new Date(yearB, monthB - 1, dayB, hourB, minuteB, secondB);
-  
+        const [dayA, monthA, yearA, hourA, minuteA, secondA] =
+          a.timestamp.split(/[\s.:]/);
+        const [dayB, monthB, yearB, hourB, minuteB, secondB] =
+          b.timestamp.split(/[\s.:]/);
+
+        const dateA = new Date(
+          yearA,
+          monthA - 1,
+          dayA,
+          hourA,
+          minuteA,
+          secondA
+        );
+        const dateB = new Date(
+          yearB,
+          monthB - 1,
+          dayB,
+          hourB,
+          minuteB,
+          secondB
+        );
+
         return dateB - dateA;
       });
-  
+
       setMatches(sortedMatches);
     } catch (err) {
       setError('Error fetching matches');
@@ -240,7 +256,6 @@ const Player = ({ onNameUpdate }) => {
       setLoadingMatches(false);
     }
   }, [userId]);
-  
 
   useEffect(() => {
     if (userId) {
@@ -301,100 +316,108 @@ const Player = ({ onNameUpdate }) => {
   }
 
   const rank = player ? getRank(player.rating) : '';
-  const medal = player ? getMedal(rank) : '';
   const rankExplanations = getAllRankExplanations();
 
   return (
     <div className='container mx-auto px-4 py-8'>
       <h1 className='text-3xl font-outfit font-bold mb-6'>Player Profile</h1>
       <div className='bg-white shadow rounded-lg p-6 mb-8 relative'>
-        <h2 className='text-2xl font-outfit font-bold mb-4 text-gray-700 flex flex-col sm:flex-row justify-between items-start sm:items-center'>
-          <div>
-            <span>{player ? player.name : 'Player Name'}</span>
-            {userId && user?.uid === userId && (
+        <div className='flex flex-col sm:flex-row justify-between items-start'>
+          <div className='w-full sm:w-1/2'>
+            <div className='text-2xl font-outfit font-bold mb-4 text-gray-700'>
+              <span>{player ? player.name : 'Player Name'}</span>
+              {userId && user?.uid === userId && (
+                <>
+                  <button
+                    onClick={handleEditClick}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      marginLeft: '8px',
+                    }}
+                  >
+                    <FontAwesomeIcon icon={faEdit} />
+                  </button>
+                  {displayInput && (
+                    <>
+                      <input
+                        type='text'
+                        className='border border-gray-300 rounded px-2 py-1 ml-2'
+                        value={player ? player.name : ''}
+                        onChange={(e) =>
+                          setPlayer({ ...player, name: e.target.value })
+                        }
+                      />
+                      <button
+                        onClick={handleSaveName}
+                        className='bg-blue-500 text-white rounded px-2 py-1 ml-2'
+                      >
+                        Save
+                      </button>
+                    </>
+                  )}
+                </>
+              )}
+            </div>
+            {loadingPlayer ? (
+              <div className='animate-pulse'>
+                <div className='h-4 bg-gray-300 rounded w-3/4 mb-4'></div>
+                <div className='h-4 bg-gray-300 rounded w-1/2 mb-4'></div>
+                <div className='h-4 bg-gray-300 rounded w-1/4 mb-4'></div>
+              </div>
+            ) : (
               <>
-                <button
-                  onClick={handleEditClick}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    marginLeft: '8px',
-                  }}
-                >
-                  <FontAwesomeIcon icon={faEdit} />
-                </button>
-                {displayInput && (
-                  <>
-                    <input
-                      type='text'
-                      className='border border-gray-300 rounded px-2 py-1 ml-2'
-                      value={player ? player.name : ''}
-                      onChange={(e) =>
-                        setPlayer({ ...player, name: e.target.value })
-                      }
-                    />
-                    <button
-                      onClick={handleSaveName}
-                      className='bg-blue-500 text-white rounded px-2 py-1 ml-2'
-                    >
-                      Save
-                    </button>
-                  </>
-                )}
+                <p className='text-gray-700'>
+                  <strong>Rating:</strong> {player.rating}
+                </p>
+                <p className='text-gray-700'>
+                  <strong>Total Matches:</strong>{' '}
+                  {player.totalMatches ? player.totalMatches : 0}
+                </p>
+                <p className='text-gray-700'>
+                  <strong>Wins:</strong> {player.wins ? player.wins : 0}
+                </p>
+                <p className='text-gray-700'>
+                  <strong>Losses:</strong> {player.losses ? player.losses : 0}
+                </p>
+                <p className='text-gray-700'>
+                  <strong>Win Rate:</strong>{' '}
+                  {player.totalMatches
+                    ? `${((player.wins / player.totalMatches) * 100).toFixed(
+                        2
+                      )}%`
+                    : '0%'}
+                </p>
+
+                <p className='text-gray-700'>
+                  <strong>Current Win Streak:</strong> {currentWinStreak}
+                </p>
+                <p className='text-gray-700'>
+                  <strong>Max Win Streak:</strong> {maxWinStreak}
+                </p>
               </>
             )}
           </div>
-          {rank && (
-            <div className='flex items-center mt-2 sm:mt-0'>
-              <span
-                className='text-lg font-bold mr-2'
+
+          <div className='w-full sm:w-1/2 flex justify-center sm:justify-end mt-6 sm:mt-0'>
+            {rank && (
+              <div
+                className='text-center'
                 data-tooltip-id='rank-tooltip'
                 data-tooltip-html={rankExplanations}
               >
-                {rank}
-              </span>
-              <span className='text-2xl'>{medal}</span>
-              <Tooltip id='rank-tooltip' />
-            </div>
-          )}
-        </h2>
-        {loadingPlayer ? (
-          <div className='animate-pulse'>
-            <div className='h-4 bg-gray-300 rounded w-3/4 mb-4'></div>
-            <div className='h-4 bg-gray-300 rounded w-1/2 mb-4'></div>
-            <div className='h-4 bg-gray-300 rounded w-1/4 mb-4'></div>
+                <span className='text-lg font-bold mr-2 text-gray-700'>
+                  {rank}
+                </span>
+                <span className='text-4xl'>
+                  <span dangerouslySetInnerHTML={{ __html: getMedal(rank) }} />
+                </span>
+                <Tooltip id='rank-tooltip' />
+              </div>
+            )}
           </div>
-        ) : (
-          <>
-            <p className='text-gray-700'>
-              <strong>Rating:</strong> {player.rating}
-            </p>
-            <p className='text-gray-700'>
-              <strong>Total Matches:</strong>{' '}
-              {player.totalMatches ? player.totalMatches : 0}
-            </p>
-            <p className='text-gray-700'>
-              <strong>Wins:</strong> {player.wins ? player.wins : 0}
-            </p>
-            <p className='text-gray-700'>
-              <strong>Losses:</strong> {player.losses ? player.losses : 0}
-            </p>
-            <p className='text-gray-700'>
-              <strong>Win Rate:</strong>{' '}
-              {player.totalMatches
-                ? `${((player.wins / player.totalMatches) * 100).toFixed(2)}%`
-                : '0%'}
-            </p>
-
-            <p className='text-gray-700'>
-              <strong>Current Win Streak:</strong> {currentWinStreak}
-            </p>
-            <p className='text-gray-700'>
-              <strong>Max Win Streak:</strong> {maxWinStreak}
-            </p>
-          </>
-        )}
+        </div>
       </div>
 
       <h2 className='text-2xl font-outfit font-bold mb-4'>Last Matches</h2>
