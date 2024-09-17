@@ -36,12 +36,12 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
   };
 
   // Calculates the new ELO rating based on player's current rating, opponent's rating, and the match result
-  const calculateElo = (playerRating, opponentRating, score) => {
-    const kFactor = 32; // This defines how much the ratings change after a match
-    const expectedScore =
-      1 / (1 + 10 ** ((opponentRating - playerRating) / 400)); // Expected score formula
-    const newRating = playerRating + kFactor * (score - expectedScore); // Adjust rating based on the actual vs expected score
-    return Math.round(newRating);
+  const calculateElo = (playerRating, opponentRating, score, minRating) => {
+    const kFactor = 32;
+    const expectedScore = 1 / (1 + 10 ** ((opponentRating - playerRating) / 400));
+    const newRating = playerRating + kFactor * (score - expectedScore);
+  
+    return Math.max(Math.round(newRating), minRating);
   };
 
   // Determines the player's rank based on their ELO rating
@@ -61,18 +61,44 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
       console.error('Player ID is undefined');
       return;
     }
-    const playerRef = doc(db, 'users', playerId); // Reference to the player's document in the database
-
+    const playerRef = doc(db, 'users', playerId);
+  
     try {
+      const playerSnapshot = await getDoc(playerRef);
+      const playerData = playerSnapshot.data();
+      const currentMinRating = playerData.minRating || 1000;
+  
+      const adjustedRating = Math.max(newRating, currentMinRating);
+  
+      const newMinRating = getNewMinRating(adjustedRating, currentMinRating);
+  
       await updateDoc(playerRef, {
-        rating: newRating,
+        rating: adjustedRating,
+        minRating: newMinRating,
         wins: wins,
         losses: losses,
-        rank: getRank(newRating), // Updates the player's rank based on their new rating
+        rank: getRank(adjustedRating), 
       });
     } catch (error) {
       console.error(`Error updating player ${playerId}:`, error);
     }
+  };
+
+  const getNewMinRating = (newRating, currentMinRating) => {
+    if (newRating >= 1001 && newRating < 1100 && currentMinRating < 1001) {
+      return 1001;
+    } else if (newRating >= 1100 && newRating < 1200 && currentMinRating < 1100) {
+      return 1100;
+    } else if (newRating >= 1200 && newRating < 1400 && currentMinRating < 1200) {
+      return 1200;
+    } else if (newRating >= 1400 && newRating < 1800 && currentMinRating < 1400) {
+      return 1400;
+    } else if (newRating >= 1800 && newRating < 2000 && currentMinRating < 1800) {
+      return 1800;
+    } else if (newRating >= 2000 && currentMinRating < 2000) {
+      return 2000;
+    }
+    return currentMinRating; 
   };
 
   // Updates the player's room-specific stats (rating, wins, losses) within the specified room
@@ -194,12 +220,15 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
         const newPlayer1Rating = calculateElo(
           player1OverallRating,
           player2OverallRating,
-          player1Score
+          player1Score,
+          player1Snapshot.data().minRating || 1000
         );
+        
         const newPlayer2Rating = calculateElo(
           player2OverallRating,
           player1OverallRating,
-          player2Score
+          player2Score,
+          player2Snapshot.data().minRating || 1000
         );
 
         // Match data that will be stored in the database
