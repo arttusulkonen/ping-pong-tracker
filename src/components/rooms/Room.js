@@ -6,7 +6,7 @@ import {
   getDocs,
   updateDoc,
 } from 'firebase/firestore';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { Store } from 'react-notifications-component';
@@ -30,45 +30,27 @@ const Room = () => {
   const [selectedUsers, setSelectedUsers] = useState([]);
   const dropdownRef = useRef(null);
 
-  const updatePlayerList = useCallback(async () => {
-    const roomDoc = await getDoc(doc(db, 'rooms', roomId));
+  useEffect(
+    () => {
+      const fetchUsers = async () => {
+        const usersCollection = await getDocs(collection(db, 'users'));
+        const allUsers = usersCollection.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
 
-    if (roomDoc.exists()) {
-      const roomData = roomDoc.data();
-      const playerPromises = roomData.members.map(async (member) => {
-        const userDoc = await getDoc(doc(db, 'users', member.userId));
-        const userData = userDoc.data();
-        return {
-          userId: userDoc.id,
-          ...userDoc.data(),
-          rating: member.rating,
-          wins: member.wins,
-          losses: member.losses,
-          totalRating: userData.rating,
-        };
-      });
-      const playerList = await Promise.all(playerPromises);
-      setMembers(playerList);
-    }
-  }, [roomId]);
-
-  useEffect(() => {
-    const fetchUsers = async () => {
-      const usersCollection = await getDocs(collection(db, 'users'));
-      const allUsers = usersCollection.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-
-      const filteredUsers = allUsers
-        .filter((user) => !members.some((member) => member.userId === user.id))
-        .sort((a, b) => a.name.localeCompare(b.name));
-      setUsersList(filteredUsers);
-    };
-
-    updatePlayerList();
-    fetchUsers();
-  }, [members, updatePlayerList]);
+        const filteredUsers = allUsers
+          .filter(
+            (user) => !members.some((member) => member.userId === user.id)
+          )
+          .sort((a, b) => a.name.localeCompare(b.name));
+        setUsersList(filteredUsers);
+      };
+      updatePlayerList();
+      fetchUsers();
+    },
+    [members]
+  );
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -152,6 +134,28 @@ const Room = () => {
         ? prevSelected.filter((id) => id !== userId)
         : [...prevSelected, userId]
     );
+  };
+
+  const updatePlayerList = async () => {
+    const roomDoc = await getDoc(doc(db, 'rooms', roomId));
+
+    if (roomDoc.exists()) {
+      const roomData = roomDoc.data();
+      const playerPromises = roomData.members.map(async (member) => {
+        const userDoc = await getDoc(doc(db, 'users', member.userId));
+        const userData = userDoc.data();
+        return {
+          userId: userDoc.id,
+          ...userDoc.data(),
+          rating: member.rating,
+          wins: member.wins,
+          losses: member.losses,
+          totalRating: userData.rating,
+        };
+      });
+      const playerList = await Promise.all(playerPromises);
+      setMembers(playerList);
+    }
   };
 
   const refreshMatches = () => {
