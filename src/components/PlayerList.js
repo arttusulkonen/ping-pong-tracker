@@ -118,23 +118,23 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
     }
   }, [players, roomId, calculateStatsForRoom]);
 
-  const getMedal = (totalRating) => {
-    if (totalRating < 1001) {
-      return '<img class="w-[50px]" src="/img/ping-pong-padawan.png" alt="Ping Pong Padawan" />';
-    } else if (totalRating < 1100) {
-      return '<img class="w-[50px]" src="/img/table-tennis-trainee.png" alt="Table Tennis Trainee" />';
-    } else if (totalRating < 1200) {
-      return '<img class="w-[50px]" src="/img/racket-rookie.png" alt="Racket Rookie" />';
-    } else if (totalRating < 1400) {
-      return '<img class="w-[50px]" src="/img/paddle-prodigy.png" alt="Paddle Prodigy" />';
-    } else if (totalRating < 1800) {
-      return '<img class="w-[50px]" src="/img/spin-sensei.png" alt="Spin Sensei" />';
-    } else if (totalRating < 2000) {
-      return '<img class="w-[50px]" src="/img/smash-samurai.png" alt="Smash Samurai" />';
-    } else {
-      return '<img class="w-[50px]" src="/img/ping-pong-paladin.png" alt="Ping Pong Paladin" />';
-    }
-  };
+  // const getMedal = (totalRating) => {
+  //   if (totalRating < 1001) {
+  //     return '<img class="w-[50px]" src="/img/ping-pong-padawan.png" alt="Ping Pong Padawan" />';
+  //   } else if (totalRating < 1100) {
+  //     return '<img class="w-[50px]" src="/img/table-tennis-trainee.png" alt="Table Tennis Trainee" />';
+  //   } else if (totalRating < 1200) {
+  //     return '<img class="w-[50px]" src="/img/racket-rookie.png" alt="Racket Rookie" />';
+  //   } else if (totalRating < 1400) {
+  //     return '<img class="w-[50px]" src="/img/paddle-prodigy.png" alt="Paddle Prodigy" />';
+  //   } else if (totalRating < 1800) {
+  //     return '<img class="w-[50px]" src="/img/spin-sensei.png" alt="Spin Sensei" />';
+  //   } else if (totalRating < 2000) {
+  //     return '<img class="w-[50px]" src="/img/smash-samurai.png" alt="Smash Samurai" />';
+  //   } else {
+  //     return '<img class="w-[50px]" src="/img/ping-pong-paladin.png" alt="Ping Pong Paladin" />';
+  //   }
+  // };
 
   const updateRoomMembers = async () => {
     try {
@@ -295,12 +295,12 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
                     >
                       <td className='py-4 px-6 text-sm font-medium text-gray-900 whitespace-nowrap'>
                         <div className='flex items-center space-x-3'>
-                          <span
+                          {/* <span
                             className='w-[40px] h-[40px] inline-block'
                             dangerouslySetInnerHTML={{
                               __html: getMedal(player.totalRating),
                             }}
-                          ></span>
+                          ></span> */}
                           <Link
                             to={`/player/${player.userId}`}
                             className='text-lg font-semibold hover:text-blue-600 transition duration-200'
