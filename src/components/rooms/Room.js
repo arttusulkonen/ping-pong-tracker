@@ -6,7 +6,7 @@ import {
   getDocs,
   updateDoc,
 } from 'firebase/firestore';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { Store } from 'react-notifications-component';
@@ -27,8 +27,30 @@ const Room = () => {
   const [updateMatches, setUpdateMatches] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [usersList, setUsersList] = useState([]);
-  const [selectedUsers, setSelectedUsers] = useState([]); 
-  const dropdownRef = useRef(null); 
+  const [selectedUsers, setSelectedUsers] = useState([]);
+  const dropdownRef = useRef(null);
+
+  const updatePlayerList = useCallback(async () => {
+    const roomDoc = await getDoc(doc(db, 'rooms', roomId));
+
+    if (roomDoc.exists()) {
+      const roomData = roomDoc.data();
+      const playerPromises = roomData.members.map(async (member) => {
+        const userDoc = await getDoc(doc(db, 'users', member.userId));
+        const userData = userDoc.data();
+        return {
+          userId: userDoc.id,
+          ...userDoc.data(),
+          rating: member.rating,
+          wins: member.wins,
+          losses: member.losses,
+          totalRating: userData.rating,
+        };
+      });
+      const playerList = await Promise.all(playerPromises);
+      setMembers(playerList);
+    }
+  }, [roomId]);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -40,12 +62,13 @@ const Room = () => {
 
       const filteredUsers = allUsers
         .filter((user) => !members.some((member) => member.userId === user.id))
-        .sort((a, b) => a.name.localeCompare(b.name)); 
+        .sort((a, b) => a.name.localeCompare(b.name));
       setUsersList(filteredUsers);
     };
+
     updatePlayerList();
     fetchUsers();
-  }, [members]);
+  }, [members, updatePlayerList]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -109,7 +132,7 @@ const Room = () => {
     setRoom({ ...room, members: updatedMembers });
     setMembers(updatedMembers);
     setSelectedUsers([]);
-    setIsDropdownOpen(false); 
+    setIsDropdownOpen(false);
 
     Store.addNotification({
       title: 'Users Invited',
@@ -129,28 +152,6 @@ const Room = () => {
         ? prevSelected.filter((id) => id !== userId)
         : [...prevSelected, userId]
     );
-  };
-
-  const updatePlayerList = async () => {
-    const roomDoc = await getDoc(doc(db, 'rooms', roomId));
-
-    if (roomDoc.exists()) {
-      const roomData = roomDoc.data();
-      const playerPromises = roomData.members.map(async (member) => {
-        const userDoc = await getDoc(doc(db, 'users', member.userId));
-        const userData = userDoc.data();
-        return {
-          userId: userDoc.id,
-          ...userDoc.data(),
-          rating: member.rating,
-          wins: member.wins,
-          losses: member.losses,
-          totalRating: userData.rating,
-        };
-      });
-      const playerList = await Promise.all(playerPromises);
-      setMembers(playerList);
-    }
   };
 
   const refreshMatches = () => {
@@ -256,10 +257,10 @@ const Room = () => {
   };
 
   return (
-    <div className="flex flex-col">
-      <h2 className="text-2xl font-outfit font-bold mb-4">{room.name}</h2>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="md:col-span-2">
+    <div className='flex flex-col'>
+      <h2 className='text-2xl font-outfit font-bold mb-4'>{room.name}</h2>
+      <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+        <div className='md:col-span-2'>
           <PlayerList
             players={members}
             loading={loading}
@@ -267,12 +268,12 @@ const Room = () => {
             roomId={roomId}
           />
         </div>
-        <div className="space-y-4 relative">
+        <div className='space-y-4 relative'>
           {(userRole === 'admin' || userRole === 'editor') && (
             <>
               <button
                 onClick={toggleDropdown}
-                className="w-full bg-gray-100 text-black px-4 py-2 border border-gray-300 rounded-md flex justify-between items-center"
+                className='w-full bg-gray-100 text-black px-4 py-2 border border-gray-300 rounded-md flex justify-between items-center'
               >
                 {isDropdownOpen ? 'Hide Users' : 'Select Users'}{' '}
                 {isDropdownOpen ? <FaChevronUp /> : <FaChevronDown />}
@@ -281,20 +282,20 @@ const Room = () => {
               {isDropdownOpen && (
                 <div
                   ref={dropdownRef}
-                  className="space-y-2 mt-2 border rounded-md p-4 absolute bg-white z-20 w-full shadow-lg overflow-auto"
+                  className='space-y-2 mt-2 border rounded-md p-4 absolute bg-white z-20 w-full shadow-lg overflow-auto'
                 >
                   {usersList.map((user) => (
                     <div
                       key={user.id}
-                      className="flex items-center text-black py-2 border-b border-gray-200 last:border-0"
+                      className='flex items-center text-black py-2 border-b border-gray-200 last:border-0'
                     >
                       <input
-                        type="checkbox"
+                        type='checkbox'
                         checked={selectedUsers.includes(user.id)}
                         onChange={() => handleSelectUser(user.id)}
-                        className="form-checkbox h-5 w-5 text-blue-600 transition duration-150 ease-in-out mr-3"
+                        className='form-checkbox h-5 w-5 text-blue-600 transition duration-150 ease-in-out mr-3'
                       />
-                      <span className="text-sm font-medium">
+                      <span className='text-sm font-medium'>
                         {user.name} ({user.email})
                       </span>
                     </div>
@@ -305,15 +306,15 @@ const Room = () => {
               <select
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
-                className="w-full bg-gray-100 text-black px-4 py-2 border border-gray-300 rounded-md transition-all duration-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                className='w-full bg-gray-100 text-black px-4 py-2 border border-gray-300 rounded-md transition-all duration-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200'
               >
-                <option value="viewer">Player</option>
-                <option value="editor">Editor</option>
+                <option value='viewer'>Player</option>
+                <option value='editor'>Editor</option>
               </select>
 
               <button
                 onClick={handleInvite}
-                className="w-full bg-blue-500 text-white font-semibold py-2 px-6 rounded-md hover:bg-blue-600 transition-colors duration-200 border-b-4 border-r-4 border-black active:border-b-0 active:border-r-0 active:border-t-4 active:border-l-4"
+                className='w-full bg-blue-500 text-white font-semibold py-2 px-6 rounded-md hover:bg-blue-600 transition-colors duration-200 border-b-4 border-r-4 border-black active:border-b-0 active:border-r-0 active:border-t-4 active:border-l-4'
               >
                 Invite Selected Users
               </button>
@@ -327,7 +328,7 @@ const Room = () => {
             ) && (
               <button
                 onClick={handleJoinRoom}
-                className="w-full bg-blue-500 text-white font-semibold py-2 px-6 rounded-md hover:bg-blue-600 transition-colors duration-200 border-b-4 border-r-4 border-black active:border-b-0 active:border-r-0 active-border-t-4 active-border-l-4"
+                className='w-full bg-blue-500 text-white font-semibold py-2 px-6 rounded-md hover:bg-blue-600 transition-colors duration-200 border-b-4 border-r-4 border-black active:border-b-0 active:border-r-0 active-border-t-4 active-border-l-4'
               >
                 Join Room
               </button>
@@ -340,7 +341,7 @@ const Room = () => {
             ) && (
               <button
                 onClick={handleLeaveRoom}
-                className="w-full bg-red-500 text-white font-semibold py-2 px-6 rounded-md hover:bg-red-600 transition-colors duration-200 border-b-4 border-r-4 border-black active:border-b-0 active-border-r-0 active-border-t-4 active-border-l-4"
+                className='w-full bg-red-500 text-white font-semibold py-2 px-6 rounded-md hover:bg-red-600 transition-colors duration-200 border-b-4 border-r-4 border-black active:border-b-0 active-border-r-0 active-border-t-4 active-border-l-4'
               >
                 Leave Room
               </button>
