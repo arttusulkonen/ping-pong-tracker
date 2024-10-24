@@ -118,23 +118,23 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
     }
   }, [players, roomId, calculateStatsForRoom]);
 
-  const getRankClass = (totalRating) => {
-    if (totalRating < 1001) {
-      return 'ping-pong-padawan';
-    } else if (totalRating < 1100) {
-      return 'table-tennis-trainee';
-    } else if (totalRating < 1200) {
-      return 'racket-rookie';
-    } else if (totalRating < 1400) {
-      return 'paddle-prodigy';
-    } else if (totalRating < 1800) {
-      return 'spin-sensei';
-    } else if (totalRating < 2000) {
-      return 'smash-samurai';
-    } else {
-      return 'ping-pong-paladin';
-    }
-  };
+  // const getRankClass = (totalRating) => {
+  //   if (totalRating < 1001) {
+  //     return 'ping-pong-padawan';
+  //   } else if (totalRating < 1100) {
+  //     return 'table-tennis-trainee';
+  //   } else if (totalRating < 1200) {
+  //     return 'racket-rookie';
+  //   } else if (totalRating < 1400) {
+  //     return 'paddle-prodigy';
+  //   } else if (totalRating < 1800) {
+  //     return 'spin-sensei';
+  //   } else if (totalRating < 2000) {
+  //     return 'smash-samurai';
+  //   } else {
+  //     return 'ping-pong-paladin';
+  //   }
+  // };
 
   const updateRoomMembers = async () => {
     try {
@@ -295,8 +295,6 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
                     >
                       <td className='py-4 px-6 text-sm font-medium text-gray-900 whitespace-nowrap'>
                         <div className='flex items-center space-x-3'>
-                          
-                        <span className={`rank-medal ${player.ratingVisible ? getRankClass(player.totalRatingNew) : 'ping-pong-hidden'}`}></span>
                           <Link
                             to={`/player/${player.userId}`}
                             className='text-lg font-semibold hover:text-blue-600 transition duration-200'
