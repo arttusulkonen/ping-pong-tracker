@@ -10,10 +10,7 @@ const LastMatches = ({ roomId, updateMatches }) => {
     const fetchMatches = async () => {
       setLoading(true);
       const matchesCollection = collection(db, 'matches');
-      const q = query(
-        matchesCollection,
-        where('roomId', '==', roomId)
-      );
+      const q = query(matchesCollection, where('roomId', '==', roomId));
       const matchesSnapshot = await getDocs(q);
 
       const matchesData = [];
@@ -41,51 +38,50 @@ const LastMatches = ({ roomId, updateMatches }) => {
 
   return (
     <div className='py-4'>
-      <h2 className='text-xl font-outfit font-bold mb-4'>Last Matches</h2>
+      <h2 className='text-xl font-outfit font-bold mb-4 text-center'>Last Matches</h2>
       <div className='overflow-x-auto'>
-        <table className='min-w-full bg-white shadow rounded-lg'>
+        <table className='min-w-full bg-white shadow-lg rounded-lg'>
           <thead>
-            <tr>
-              <th className='py-3 px-6 bg-gray-200 text-left text-xs font-medium text-gray-700 uppercase tracking-wider'>
-                Players
-              </th>
-              <th className='py-3 px-6 bg-gray-200 text-left text-xs font-medium text-gray-700 uppercase tracking-wider'>
-                Scores
-              </th>
-              <th className='py-3 px-6 bg-gray-200 text-left text-xs font-medium text-gray-700 uppercase tracking-wider'>
-                Winner
-              </th>
-              <th className='py-3 px-6 bg-gray-200 text-left text-xs font-medium text-gray-700 uppercase tracking-wider'>
-                Date
-              </th>
+            <tr className='bg-gray-300 text-gray-700'>
+              <th className='py-3 px-6 text-left text-xs font-medium uppercase tracking-wider'>Players</th>
+              <th className='py-3 px-6 text-left text-xs font-medium uppercase tracking-wider'>Scores</th>
+              <th className='py-3 px-6 text-left text-xs font-medium uppercase tracking-wider'>Points</th>
+              <th className='py-3 px-6 text-left text-xs font-medium uppercase tracking-wider'>Winner</th>
+              <th className='py-3 px-6 text-left text-xs font-medium uppercase tracking-wider'>Date</th>
             </tr>
           </thead>
           <tbody className='divide-y divide-gray-200'>
             {loading ? (
               Array.from({ length: 5 }).map((_, index) => (
-                <tr key={index}>
-                  <td className='py-4 px-6 text-sm text-gray-900 animate-pulse'>
+                <tr key={index} className='animate-pulse'>
+                  <td className='py-4 px-6 text-sm text-gray-900'>
                     <div className='h-4 bg-gray-300 rounded w-3/4'></div>
                   </td>
-                  <td className='py-4 px-6 text-sm text-gray-900 animate-pulse'>
+                  <td className='py-4 px-6 text-sm text-gray-900'>
                     <div className='h-4 bg-gray-300 rounded w-1/4'></div>
                   </td>
-                  <td className='py-4 px-6 text-sm text-gray-900 animate-pulse'>
+                  <td className='py-4 px-6 text-sm text-gray-900'>
                     <div className='h-4 bg-gray-300 rounded w-1/4'></div>
                   </td>
-                  <td className='py-4 px-6 text-sm text-gray-900 animate-pulse'>
+                  <td className='py-4 px-6 text-sm text-gray-900'>
+                    <div className='h-4 bg-gray-300 rounded w-1/4'></div>
+                  </td>
+                  <td className='py-4 px-6 text-sm text-gray-900'>
                     <div className='h-4 bg-gray-300 rounded w-1/4'></div>
                   </td>
                 </tr>
               ))
             ) : matches.length > 0 ? (
               matches.map((match, index) => (
-                <tr key={index}>
+                <tr key={index} className={`hover:bg-gray-100 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
                   <td className='py-4 px-6 text-sm font-medium text-gray-900 whitespace-nowrap'>
-                    {match.player1.name} vs {match.player2.name}
+                    {match.player1.name} - {match.player2.name}
                   </td>
                   <td className='py-4 px-6 text-sm text-gray-900 whitespace-nowrap'>
                     {match.player1.scores} - {match.player2.scores}
+                  </td>
+                  <td className='py-4 px-6 text-sm text-gray-900 whitespace-nowrap'>
+                    {match.player1.addedPoints} earned : {match.player2.addedPoints} earned
                   </td>
                   <td className='py-4 px-6 text-sm text-gray-900 whitespace-nowrap'>
                     {match.winner}
@@ -97,10 +93,7 @@ const LastMatches = ({ roomId, updateMatches }) => {
               ))
             ) : (
               <tr>
-                <td
-                  colSpan={4}
-                  className='text-center py-4 text-sm text-gray-700'
-                >
+                <td colSpan={5} className='text-center py-4 text-sm text-gray-700'>
                   No matches found.
                 </td>
               </tr>
@@ -113,3 +106,4 @@ const LastMatches = ({ roomId, updateMatches }) => {
 };
 
 export default LastMatches;
+
