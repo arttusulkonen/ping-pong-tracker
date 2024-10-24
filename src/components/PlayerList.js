@@ -118,23 +118,23 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
     }
   }, [players, roomId, calculateStatsForRoom]);
 
-  // const getMedal = (totalRating) => {
-  //   if (totalRating < 1001) {
-  //     return '<img class="w-[50px]" src="/img/ping-pong-padawan.png" alt="Ping Pong Padawan" />';
-  //   } else if (totalRating < 1100) {
-  //     return '<img class="w-[50px]" src="/img/table-tennis-trainee.png" alt="Table Tennis Trainee" />';
-  //   } else if (totalRating < 1200) {
-  //     return '<img class="w-[50px]" src="/img/racket-rookie.png" alt="Racket Rookie" />';
-  //   } else if (totalRating < 1400) {
-  //     return '<img class="w-[50px]" src="/img/paddle-prodigy.png" alt="Paddle Prodigy" />';
-  //   } else if (totalRating < 1800) {
-  //     return '<img class="w-[50px]" src="/img/spin-sensei.png" alt="Spin Sensei" />';
-  //   } else if (totalRating < 2000) {
-  //     return '<img class="w-[50px]" src="/img/smash-samurai.png" alt="Smash Samurai" />';
-  //   } else {
-  //     return '<img class="w-[50px]" src="/img/ping-pong-paladin.png" alt="Ping Pong Paladin" />';
-  //   }
-  // };
+  const getRankClass = (totalRating) => {
+    if (totalRating < 1001) {
+      return 'ping-pong-padawan';
+    } else if (totalRating < 1100) {
+      return 'table-tennis-trainee';
+    } else if (totalRating < 1200) {
+      return 'racket-rookie';
+    } else if (totalRating < 1400) {
+      return 'paddle-prodigy';
+    } else if (totalRating < 1800) {
+      return 'spin-sensei';
+    } else if (totalRating < 2000) {
+      return 'smash-samurai';
+    } else {
+      return 'ping-pong-paladin';
+    }
+  };
 
   const updateRoomMembers = async () => {
     try {
@@ -218,7 +218,7 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
       <div className='-m-1.5 overflow-x-auto'>
         <div className='p-1.5 min-w-full inline-block align-middle'>
           <div className='overflow-hidden shadow-md'>
-            <table className='min-w-full bg-white shadow rounded-lg'>
+            <table className='min-w-full bg-white shadow'>
               <thead>
                 <tr>
                   <th
@@ -295,12 +295,8 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
                     >
                       <td className='py-4 px-6 text-sm font-medium text-gray-900 whitespace-nowrap'>
                         <div className='flex items-center space-x-3'>
-                          {/* <span
-                            className='w-[40px] h-[40px] inline-block'
-                            dangerouslySetInnerHTML={{
-                              __html: getMedal(player.totalRating),
-                            }}
-                          ></span> */}
+                          
+                        <span className={`rank-medal ${player.ratingVisible ? getRankClass(player.totalRatingNew) : 'ping-pong-hidden'}`}></span>
                           <Link
                             to={`/player/${player.userId}`}
                             className='text-lg font-semibold hover:text-blue-600 transition duration-200'

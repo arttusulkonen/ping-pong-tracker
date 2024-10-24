@@ -30,26 +30,21 @@ const Room = () => {
   const [selectedUsers, setSelectedUsers] = useState([]);
   const dropdownRef = useRef(null);
 
-  useEffect(
-    () => {
-      const fetchUsers = async () => {
-        const usersCollection = await getDocs(collection(db, 'users'));
-        const allUsers = usersCollection.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+  useEffect(() => {
+    const fetchUsers = async () => {
+      const usersCollection = await getDocs(collection(db, 'users'));
+      const allUsers = usersCollection.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
 
-        const filteredUsers = allUsers
-          .filter(
-            (user) => !members.some((member) => member.userId === user.id)
-          )
-          .sort((a, b) => a.name.localeCompare(b.name));
-        setUsersList(filteredUsers);
-      };
-      fetchUsers();
-    },
-    [members]
-  );
+      const filteredUsers = allUsers
+        .filter((user) => !members.some((member) => member.userId === user.id))
+        .sort((a, b) => a.name.localeCompare(b.name));
+      setUsersList(filteredUsers);
+    };
+    fetchUsers();
+  }, [members]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -173,6 +168,25 @@ const Room = () => {
         setRoom(data);
         setMembers(data.members || []);
         const currentUser = auth.currentUser;
+
+        
+        const usersCollection = await getDocs(collection(db, 'users'));
+        const allUsers = usersCollection.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+
+        
+        const membersWithTotalRating = data.members.map((member) => {
+          const user = allUsers.find((user) => user.id === member.userId);
+          return {
+            ...member,
+            totalRatingNew: user ? user.rating : 0, 
+          };
+        });
+
+        setMembers(membersWithTotalRating);
+
         if (currentUser) {
           if (data.creator === currentUser.uid) {
             setUserRole('admin');

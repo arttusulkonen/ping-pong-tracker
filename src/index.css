@@ -83,3 +83,41 @@ body {
 .custom-tooltip .react-tooltip-arrow {
   color: rgba(0, 0, 0, 0.8) !important;
 }
+
+.rank-medal {
+  width: 50px; 
+  height: 50px; 
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+
+.rank-medal.ping-pong-padawan {
+  background-image: url('/public/img/ping-pong-padawan.png');
+}
+
+.rank-medal.table-tennis-trainee {
+  background-image: url('/public/img/table-tennis-trainee.png');
+}
+
+.rank-medal.racket-rookie {
+  background-image: url('/public/img/racket-rookie.png');
+}
+
+.rank-medal.paddle-prodigy {
+  background-image: url('/public/img/paddle-prodigy.png');
+}
+
+.rank-medal.spin-sensei {
+  background-image: url('/public/img/spin-sensei.png');
+}
+
+.rank-medal.smash-samurai {
+  background-image: url('/public/img/smash-samurai.png');
+}
+
+.rank-medal.ping-pong-paladin {
+  background-image: url('/public/img/ping-pong-paladin.png');
+}
+.rank-medal.ping-pong-hidden {
+  background-image: url('/public/img/ping-pong-hidden.png');
+}
