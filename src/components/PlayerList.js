@@ -8,6 +8,7 @@ import {
   where,
 } from 'firebase/firestore';
 import React, { useCallback, useEffect, useState } from 'react';
+import { LazyLoadImage } from 'react-lazy-load-image-component';
 import { Link } from 'react-router-dom';
 import { Tooltip } from 'react-tooltip';
 import 'react-tooltip/dist/react-tooltip.css';
@@ -118,23 +119,46 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
     }
   }, [players, roomId, calculateStatsForRoom]);
 
-  // const getRankClass = (totalRating) => {
-  //   if (totalRating < 1001) {
-  //     return 'ping-pong-padawan';
-  //   } else if (totalRating < 1100) {
-  //     return 'table-tennis-trainee';
-  //   } else if (totalRating < 1200) {
-  //     return 'racket-rookie';
-  //   } else if (totalRating < 1400) {
-  //     return 'paddle-prodigy';
-  //   } else if (totalRating < 1800) {
-  //     return 'spin-sensei';
-  //   } else if (totalRating < 2000) {
-  //     return 'smash-samurai';
-  //   } else {
-  //     return 'ping-pong-paladin';
-  //   }
-  // };
+  const getRankUrl = (totalRating) => {
+    const rankUrls = [
+      'https://bekindcult.fi/wp-content/uploads/2024/10/ping-pong-padawan.png',
+      'https://bekindcult.fi/wp-content/uploads/2024/10/table-tennis-trainee.png',
+      'https://bekindcult.fi/wp-content/uploads/2024/10/racket-rookie.png',
+      'https://bekindcult.fi/wp-content/uploads/2024/10/paddle-prodigy.png',
+      'https://bekindcult.fi/wp-content/uploads/2024/10/spin-sensei.png',
+      'https://bekindcult.fi/wp-content/uploads/2024/10/smash-samurai.png',
+      'https://bekindcult.fi/wp-content/uploads/2024/10/ping-pong-paladin.png',
+    ];
+
+    if (totalRating < 1001) {
+      return rankUrls[0];
+    } else if (totalRating < 1100) {
+      return rankUrls[1];
+    } else if (totalRating < 1200) {
+      return rankUrls[2];
+    } else if (totalRating < 1400) {
+      return rankUrls[3];
+    } else if (totalRating < 1800) {
+      return rankUrls[4];
+    } else if (totalRating < 2000) {
+      return rankUrls[5];
+    } else {
+      return rankUrls[6];
+    }
+  };
+
+  const getCachedImageUrl = (userId, rating) => {
+    const cacheKey = `imageUrl-${userId}-${rating}`;
+    const cachedUrl = localStorage.getItem(cacheKey);
+    
+    if (cachedUrl) {
+      return cachedUrl; 
+    } else {
+      const newUrl = getRankUrl(rating);
+      localStorage.setItem(cacheKey, newUrl); 
+      return newUrl;
+    }
+  };
 
   const updateRoomMembers = async () => {
     try {
@@ -295,6 +319,22 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
                     >
                       <td className='py-4 px-6 text-sm font-medium text-gray-900 whitespace-nowrap'>
                         <div className='flex items-center space-x-3'>
+                          {player.ratingVisible ? (
+                            <LazyLoadImage
+                              src={getCachedImageUrl(player.userId, player.totalRatingNew)}
+                              alt={player.name}
+                              className='h-8 w-8 mr-2'
+                              effect='opacity'
+                              placeholderSrc='https://bekindcult.fi/wp-content/uploads/2024/10/unknown-1.webp'
+                            />
+                          ) : (
+                            <LazyLoadImage
+                              src='https://bekindcult.fi/wp-content/uploads/2024/10/unknown-1.webp'
+                              alt={player.name}
+                              className='h-8 w-8 mr-2'
+                              effect='opacity'
+                            />
+                          )}
                           <Link
                             to={`/player/${player.userId}`}
                             className='text-lg font-semibold hover:text-blue-600 transition duration-200'
