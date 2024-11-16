@@ -29,6 +29,11 @@ const Player = ({ onNameUpdate }) => {
   const [displayInput, setDisplayInput] = useState(false);
   const [user] = useAuthState(auth);
 
+  const [selectedOpponent, setSelectedOpponent] = useState('');
+  const [opponentsList, setOpponentsList] = useState([]);
+  const [filteredMatches, setFilteredMatches] = useState([]);
+  const [opponentStats, setOpponentStats] = useState(null);
+
   const getRank = (rating) => {
     if (rating < 1001) return 'Ping Pong Padawan';
     if (rating < 1100) return 'Table Tennis Trainee';
@@ -104,7 +109,10 @@ const Player = ({ onNameUpdate }) => {
       let isNicknameTaken = false;
 
       usersSnapshot.forEach((doc) => {
-        if (doc.data().name.toLowerCase() === player.name.toLowerCase()) {
+        if (
+          doc.data().name.toLowerCase() === player.name.toLowerCase() &&
+          doc.id !== userId
+        ) {
           isNicknameTaken = true;
         }
       });
@@ -120,7 +128,7 @@ const Player = ({ onNameUpdate }) => {
 
       const roomsCollection = collection(db, 'rooms');
       const roomsSnapshot = await getDocs(roomsCollection);
-      roomsSnapshot.forEach(async (roomDoc) => {
+      for (const roomDoc of roomsSnapshot.docs) {
         const roomData = roomDoc.data();
         const updatedMembers = roomData.members.map((member) =>
           member.userId === userId ? { ...member, name: player.name } : member
@@ -130,11 +138,11 @@ const Player = ({ onNameUpdate }) => {
           ...roomData,
           members: updatedMembers,
         });
-      });
+      }
 
       const matchesCollection = collection(db, 'matches');
       const matchesSnapshot = await getDocs(matchesCollection);
-      matchesSnapshot.forEach(async (matchDoc) => {
+      for (const matchDoc of matchesSnapshot.docs) {
         const matchData = matchDoc.data();
         let updatedMatch = { ...matchData };
 
@@ -147,13 +155,13 @@ const Player = ({ onNameUpdate }) => {
 
         if (matchData.player2Id === userId) {
           updatedMatch = {
-            ...matchData,
+            ...updatedMatch,
             player2: { ...matchData.player2, name: player.name },
           };
         }
 
         await setDoc(doc(db, 'matches', matchDoc.id), updatedMatch);
-      });
+      }
 
       onNameUpdate(player.name);
 
@@ -198,9 +206,10 @@ const Player = ({ onNameUpdate }) => {
       const playerSnap = await getDoc(playerRef);
 
       if (playerSnap.exists()) {
+        const playerData = playerSnap.data();
         setPlayer({
-          ...playerSnap.data(),
-          totalMatches: playerSnap.data().wins + playerSnap.data().losses,
+          ...playerData,
+          totalMatches: (playerData.wins || 0) + (playerData.losses || 0),
           id: userId,
         });
       } else {
@@ -249,13 +258,47 @@ const Player = ({ onNameUpdate }) => {
         return dateB - dateA;
       });
 
+      // Extract unique opponents
+      const opponentsSet = new Set();
+      matchesData.forEach((match) => {
+        const opponentId =
+          match.player1Id === userId ? match.player2Id : match.player1Id;
+        const opponentName =
+          match.player1Id === userId ? match.player2.name : match.player1.name;
+        opponentsSet.add(JSON.stringify({ id: opponentId, name: opponentName }));
+      });
+
+      const opponentsList = Array.from(opponentsSet).map((item) =>
+        JSON.parse(item)
+      );
+
+      setOpponentsList(opponentsList);
       setMatches(sortedMatches);
+      setFilteredMatches(sortedMatches); // Initially show all matches
     } catch (err) {
       setError('Error fetching matches');
     } finally {
       setLoadingMatches(false);
     }
   }, [userId]);
+
+  const handleOpponentChange = (e) => {
+    const opponentId = e.target.value;
+    setSelectedOpponent(opponentId);
+
+    if (opponentId === '') {
+      // If no opponent is selected, show all matches
+      setFilteredMatches(matches);
+    } else {
+      // Filter matches by selected opponent
+      const filtered = matches.filter((match) => {
+        return (
+          match.player1Id === opponentId || match.player2Id === opponentId
+        );
+      });
+      setFilteredMatches(filtered);
+    }
+  };
 
   useEffect(() => {
     if (userId) {
@@ -265,6 +308,7 @@ const Player = ({ onNameUpdate }) => {
   }, [userId, fetchPlayer, fetchMatches]);
 
   useEffect(() => {
+    // Calculate overall win streaks
     const calculateWinStreaks = () => {
       let maxWinStreak = 0;
       let currentWinStreak = 0;
@@ -311,11 +355,79 @@ const Player = ({ onNameUpdate }) => {
     calculateWinStreaks();
   }, [matches, userId]);
 
+  useEffect(() => {
+    if (selectedOpponent === '' || filteredMatches.length === 0) {
+      setOpponentStats(null);
+      return;
+    }
+
+    let wins = 0;
+    let losses = 0;
+    let maxWinMargin = null;
+    let maxLossMargin = null;
+    let currentWinStreak = 0;
+    let maxWinStreak = 0;
+    let currentLossStreak = 0;
+    let maxLossStreak = 0;
+
+    // Sort matches by date
+    const sortedMatches = [...filteredMatches].sort(
+      (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
+    );
+
+    sortedMatches.forEach((match) => {
+      const isWinner =
+        (match.player1Id === userId && match.winner === match.player1.name) ||
+        (match.player2Id === userId && match.winner === match.player2.name);
+
+      const opponentScore =
+        match.player1Id === selectedOpponent
+          ? match.player1.scores
+          : match.player2.scores;
+      const playerScore =
+        match.player1Id === userId ? match.player1.scores : match.player2.scores;
+
+      const scoreMargin = playerScore - opponentScore;
+
+      if (isWinner) {
+        wins++;
+        currentWinStreak++;
+        currentLossStreak = 0;
+        if (currentWinStreak > maxWinStreak) maxWinStreak = currentWinStreak;
+
+        // Biggest win
+        if (maxWinMargin === null || scoreMargin > maxWinMargin) {
+          maxWinMargin = scoreMargin;
+        }
+      } else {
+        losses++;
+        currentLossStreak++;
+        currentWinStreak = 0;
+        if (currentLossStreak > maxLossStreak) maxLossStreak = currentLossStreak;
+
+        // Biggest loss
+        if (maxLossMargin === null || scoreMargin < maxLossMargin) {
+          maxLossMargin = scoreMargin;
+        }
+      }
+    });
+
+    setOpponentStats({
+      totalMatches: wins + losses,
+      wins,
+      losses,
+      maxWinMargin,
+      maxLossMargin,
+      maxWinStreak,
+      maxLossStreak,
+    });
+  }, [selectedOpponent, filteredMatches, userId]);
+
   if (error) {
     return <div className='text-red-500'>{error}</div>;
   }
 
-  const rank = player ? getRank(player.rating) : '';
+  const rank = player ? getRank(player.maxRating || player.rating) : '';
   const rankExplanations = getAllRankExplanations();
 
   return (
@@ -372,6 +484,9 @@ const Player = ({ onNameUpdate }) => {
                   <strong>Rating:</strong> {player.rating}
                 </p>
                 <p className='text-gray-700'>
+                  <strong>Max Rating:</strong> {player.maxRating || player.rating}
+                </p>
+                <p className='text-gray-700'>
                   <strong>Total Matches:</strong>{' '}
                   {player.totalMatches ? player.totalMatches : 0}
                 </p>
@@ -384,9 +499,7 @@ const Player = ({ onNameUpdate }) => {
                 <p className='text-gray-700'>
                   <strong>Win Rate:</strong>{' '}
                   {player.totalMatches
-                    ? `${((player.wins / player.totalMatches) * 100).toFixed(
-                        2
-                      )}%`
+                    ? `${((player.wins / player.totalMatches) * 100).toFixed(2)}%`
                     : '0%'}
                 </p>
 
@@ -419,6 +532,51 @@ const Player = ({ onNameUpdate }) => {
           </div>
         </div>
       </div>
+
+      <h2 className='text-2xl font-outfit font-bold mb-4'>Filter by Opponent</h2>
+      <select
+        className='w-full md:w-1/2 bg-gray-100 text-black px-4 py-2 border border-gray-300 rounded-md mb-4'
+        value={selectedOpponent}
+        onChange={handleOpponentChange}
+      >
+        <option value=''>All Opponents</option>
+        {opponentsList.map((opponent) => (
+          <option key={opponent.id} value={opponent.id}>
+            {opponent.name}
+          </option>
+        ))}
+      </select>
+
+      {opponentStats && (
+        <div className='bg-white shadow rounded-lg p-6 mb-8'>
+          <h3 className='text-xl font-outfit font-bold mb-4 text-gray-700'>
+            Statistics against{' '}
+            {opponentsList.find((o) => o.id === selectedOpponent)?.name}
+          </h3>
+          <p className='text-gray-700'>
+            <strong>Total Matches:</strong> {opponentStats.totalMatches}
+          </p>
+          <p className='text-gray-700'>
+            <strong>Wins:</strong> {opponentStats.wins}
+          </p>
+          <p className='text-gray-700'>
+            <strong>Losses:</strong> {opponentStats.losses}
+          </p>
+          <p className='text-gray-700'>
+            <strong>Biggest Win Margin:</strong> {opponentStats.maxWinMargin}
+          </p>
+          <p className='text-gray-700'>
+            <strong>Biggest Loss Margin:</strong>{' '}
+            {Math.abs(opponentStats.maxLossMargin)}
+          </p>
+          <p className='text-gray-700'>
+            <strong>Longest Win Streak:</strong> {opponentStats.maxWinStreak}
+          </p>
+          <p className='text-gray-700'>
+            <strong>Longest Loss Streak:</strong> {opponentStats.maxLossStreak}
+          </p>
+        </div>
+      )}
 
       <h2 className='text-2xl font-outfit font-bold mb-4'>Last Matches</h2>
       <div className='overflow-x-auto'>
@@ -457,8 +615,8 @@ const Player = ({ onNameUpdate }) => {
                   </td>
                 </tr>
               ))
-            ) : matches.length > 0 ? (
-              matches.map((match, index) => (
+            ) : filteredMatches.length > 0 ? (
+              filteredMatches.map((match, index) => (
                 <tr key={index}>
                   <td className='py-4 px-6 text-sm text-gray-900'>
                     {match.player1.name} vs {match.player2.name}

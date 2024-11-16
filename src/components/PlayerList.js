@@ -119,7 +119,7 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
     }
   }, [players, roomId, calculateStatsForRoom]);
 
-  const getRankUrl = (totalRating) => {
+  const getRankUrl = (maxRating) => {
     const rankUrls = [
       'https://bekindcult.fi/wp-content/uploads/2024/10/ping-pong-padawan.png',
       'https://bekindcult.fi/wp-content/uploads/2024/10/table-tennis-trainee.png',
@@ -129,36 +129,36 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
       'https://bekindcult.fi/wp-content/uploads/2024/10/smash-samurai.png',
       'https://bekindcult.fi/wp-content/uploads/2024/10/ping-pong-paladin.png',
     ];
-
-    if (totalRating < 1001) {
+  
+    if (maxRating < 1001) {
       return rankUrls[0];
-    } else if (totalRating < 1100) {
+    } else if (maxRating < 1100) {
       return rankUrls[1];
-    } else if (totalRating < 1200) {
+    } else if (maxRating < 1200) {
       return rankUrls[2];
-    } else if (totalRating < 1400) {
+    } else if (maxRating < 1400) {
       return rankUrls[3];
-    } else if (totalRating < 1800) {
+    } else if (maxRating < 1800) {
       return rankUrls[4];
-    } else if (totalRating < 2000) {
+    } else if (maxRating < 2000) {
       return rankUrls[5];
     } else {
       return rankUrls[6];
     }
-  };
+  };  
 
-  const getCachedImageUrl = (userId, rating) => {
-    const cacheKey = `imageUrl-${userId}-${rating}`;
+  const getCachedImageUrl = (userId, maxRating) => {
+    const cacheKey = `imageUrl-${userId}-${maxRating}`;
     const cachedUrl = localStorage.getItem(cacheKey);
-
+    
     if (cachedUrl) {
-      return cachedUrl;
+      return cachedUrl; 
     } else {
-      const newUrl = getRankUrl(rating);
-      localStorage.setItem(cacheKey, newUrl);
+      const newUrl = getRankUrl(maxRating);
+      localStorage.setItem(cacheKey, newUrl); 
       return newUrl;
     }
-  };
+  };  
 
   const updateRoomMembers = async () => {
     try {
@@ -314,11 +314,6 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
                 ) : (
                   sortedPlayers.map(
                     (player) => (
-                      console.log(
-                        'player',
-                        player.userId,
-                        player.totalRating
-                      ),
                       (
                         <tr
                           key={player.userId}
@@ -328,15 +323,12 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
                             <div className='flex items-center space-x-3'>
                               {player.ratingVisible ? (
                                 <LazyLoadImage
-                                  src={getCachedImageUrl(
-                                    player.userId,
-                                    player.totalRating
-                                  )}
-                                  alt={player.name}
-                                  className='h-8 w-8 mr-2'
-                                  effect='opacity'
-                                  placeholderSrc='https://bekindcult.fi/wp-content/uploads/2024/10/unknown-1.webp'
-                                />
+                                src={getCachedImageUrl(player.userId, player.maxRating)}
+                                alt={player.name}
+                                className='h-8 w-8 mr-2'
+                                effect='opacity'
+                                placeholderSrc='https://bekindcult.fi/wp-content/uploads/2024/10/unknown-1.webp'
+                              />
                               ) : (
                                 <LazyLoadImage
                                   src='https://bekindcult.fi/wp-content/uploads/2024/10/unknown-1.webp'

@@ -132,7 +132,7 @@ const Room = () => {
 
   const updatePlayerList = async () => {
     const roomDoc = await getDoc(doc(db, 'rooms', roomId));
-
+  
     if (roomDoc.exists()) {
       const roomData = roomDoc.data();
       const playerPromises = roomData.members.map(async (member) => {
@@ -140,17 +140,19 @@ const Room = () => {
         const userData = userDoc.data();
         return {
           userId: userDoc.id,
-          ...userDoc.data(),
+          ...userData,
           rating: member.rating,
           wins: member.wins,
           losses: member.losses,
           totalRating: userData.rating,
+          maxRating: userData.maxRating || userData.rating,
         };
       });
       const playerList = await Promise.all(playerPromises);
       setMembers(playerList);
     }
   };
+  
 
   const refreshMatches = () => {
     setUpdateMatches((prev) => !prev);
@@ -163,27 +165,28 @@ const Room = () => {
   useEffect(() => {
     const fetchRoomData = async () => {
       const roomDoc = await getDoc(doc(db, 'rooms', roomId));
-      if (roomDoc.exists()) {
-        const data = roomDoc.data();
-        setRoom(data);
-        setMembers(data.members || []);
-        const currentUser = auth.currentUser;
+    if (roomDoc.exists()) {
+      const data = roomDoc.data();
+      setRoom(data);
+      setMembers(data.members || []);
+      const currentUser = auth.currentUser;
 
-        const usersCollection = await getDocs(collection(db, 'users'));
-        const allUsers = usersCollection.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+      const usersCollection = await getDocs(collection(db, 'users'));
+      const allUsers = usersCollection.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
 
-        const membersWithTotalRating = data.members.map((member) => {
-          const user = allUsers.find((user) => user.id === member.userId);
-          return {
-            ...member,
-            totalRating: user ? user.rating : 0,
-          };
-        });
+      const membersWithTotalRating = data.members.map((member) => {
+        const user = allUsers.find((user) => user.id === member.userId);
+        return {
+          ...member,
+          totalRating: user ? user.rating : 0,
+          maxRating: user ? user.maxRating || user.rating : 0,
+        };
+      });
 
-        setMembers(membersWithTotalRating);
+      setMembers(membersWithTotalRating);
 
         if (currentUser) {
           if (data.creator === currentUser.uid) {
