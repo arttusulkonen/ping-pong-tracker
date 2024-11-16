@@ -169,19 +169,17 @@ const Room = () => {
         setMembers(data.members || []);
         const currentUser = auth.currentUser;
 
-        
         const usersCollection = await getDocs(collection(db, 'users'));
         const allUsers = usersCollection.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
 
-        
         const membersWithTotalRating = data.members.map((member) => {
           const user = allUsers.find((user) => user.id === member.userId);
           return {
             ...member,
-            totalRatingNew: user ? user.rating : 0, 
+            totalRating: user ? user.rating : 0,
           };
         });
 
