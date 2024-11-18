@@ -265,7 +265,9 @@ const Player = ({ onNameUpdate }) => {
           match.player1Id === userId ? match.player2Id : match.player1Id;
         const opponentName =
           match.player1Id === userId ? match.player2.name : match.player1.name;
-        opponentsSet.add(JSON.stringify({ id: opponentId, name: opponentName }));
+        opponentsSet.add(
+          JSON.stringify({ id: opponentId, name: opponentName })
+        );
       });
 
       const opponentsList = Array.from(opponentsSet).map((item) =>
@@ -292,9 +294,7 @@ const Player = ({ onNameUpdate }) => {
     } else {
       // Filter matches by selected opponent
       const filtered = matches.filter((match) => {
-        return (
-          match.player1Id === opponentId || match.player2Id === opponentId
-        );
+        return match.player1Id === opponentId || match.player2Id === opponentId;
       });
       setFilteredMatches(filtered);
     }
@@ -385,7 +385,9 @@ const Player = ({ onNameUpdate }) => {
           ? match.player1.scores
           : match.player2.scores;
       const playerScore =
-        match.player1Id === userId ? match.player1.scores : match.player2.scores;
+        match.player1Id === userId
+          ? match.player1.scores
+          : match.player2.scores;
 
       const scoreMargin = playerScore - opponentScore;
 
@@ -403,7 +405,8 @@ const Player = ({ onNameUpdate }) => {
         losses++;
         currentLossStreak++;
         currentWinStreak = 0;
-        if (currentLossStreak > maxLossStreak) maxLossStreak = currentLossStreak;
+        if (currentLossStreak > maxLossStreak)
+          maxLossStreak = currentLossStreak;
 
         // Biggest loss
         if (maxLossMargin === null || scoreMargin < maxLossMargin) {
@@ -420,6 +423,20 @@ const Player = ({ onNameUpdate }) => {
       maxLossMargin,
       maxWinStreak,
       maxLossStreak,
+      gainedScores: sortedMatches.reduce((acc, match) => {
+        if (match.player1Id === userId) {
+          return acc + match.player1.scores;
+        } else {
+          return acc + match.player2.scores;
+        }
+      }, 0),
+      lostScores: sortedMatches.reduce((acc, match) => {
+        if (match.player1Id === userId) {
+          return acc + match.player2.scores;
+        } else {
+          return acc + match.player1.scores;
+        }
+      }, 0),
     });
   }, [selectedOpponent, filteredMatches, userId]);
 
@@ -484,7 +501,8 @@ const Player = ({ onNameUpdate }) => {
                   <strong>Rating:</strong> {player.rating}
                 </p>
                 <p className='text-gray-700'>
-                  <strong>Max Rating:</strong> {player.maxRating || player.rating}
+                  <strong>Max Rating:</strong>{' '}
+                  {player.maxRating || player.rating}
                 </p>
                 <p className='text-gray-700'>
                   <strong>Total Matches:</strong>{' '}
@@ -499,10 +517,11 @@ const Player = ({ onNameUpdate }) => {
                 <p className='text-gray-700'>
                   <strong>Win Rate:</strong>{' '}
                   {player.totalMatches
-                    ? `${((player.wins / player.totalMatches) * 100).toFixed(2)}%`
+                    ? `${((player.wins / player.totalMatches) * 100).toFixed(
+                        2
+                      )}%`
                     : '0%'}
                 </p>
-
                 <p className='text-gray-700'>
                   <strong>Current Win Streak:</strong> {currentWinStreak}
                 </p>
@@ -533,7 +552,9 @@ const Player = ({ onNameUpdate }) => {
         </div>
       </div>
 
-      <h2 className='text-2xl font-outfit font-bold mb-4'>Filter by Opponent</h2>
+      <h2 className='text-2xl font-outfit font-bold mb-4'>
+        Filter by Opponent
+      </h2>
       <select
         className='w-full md:w-1/2 bg-gray-100 text-black px-4 py-2 border border-gray-300 rounded-md mb-4'
         value={selectedOpponent}
@@ -563,12 +584,32 @@ const Player = ({ onNameUpdate }) => {
             <strong>Losses:</strong> {opponentStats.losses}
           </p>
           <p className='text-gray-700'>
+            <strong>Win Rate:</strong>{' '}
+            {opponentStats.totalMatches
+              ? `${(
+                  (opponentStats.wins / opponentStats.totalMatches) *
+                  100
+                ).toFixed(2)}%`
+              : '0%'}
+          </p>
+          <p className='text-gray-700'>
             <strong>Biggest Win Margin:</strong> {opponentStats.maxWinMargin}
           </p>
           <p className='text-gray-700'>
             <strong>Biggest Loss Margin:</strong>{' '}
             {Math.abs(opponentStats.maxLossMargin)}
           </p>
+          <p className='text-gray-700'>
+            <strong>Gained Scores:</strong> {opponentStats.gainedScores}
+          </p>
+          <p className='text-gray-700'>
+            <strong>Lost Scores:</strong> {opponentStats.lostScores}
+          </p>
+          <p className='text-gray-700'>
+            <strong>Score Difference:</strong>{' '}
+            {opponentStats.gainedScores - opponentStats.lostScores}
+          </p>
+
           <p className='text-gray-700'>
             <strong>Longest Win Streak:</strong> {opponentStats.maxWinStreak}
           </p>
