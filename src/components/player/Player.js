@@ -570,53 +570,104 @@ const Player = ({ onNameUpdate }) => {
 
       {opponentStats && (
         <div className='bg-white shadow rounded-lg p-6 mb-8'>
-          <h3 className='text-xl font-outfit font-bold mb-4 text-gray-700'>
-            Statistics against{' '}
-            {opponentsList.find((o) => o.id === selectedOpponent)?.name}
-          </h3>
-          <p className='text-gray-700'>
-            <strong>Total Matches:</strong> {opponentStats.totalMatches}
-          </p>
-          <p className='text-gray-700'>
-            <strong>Wins:</strong> {opponentStats.wins}
-          </p>
-          <p className='text-gray-700'>
-            <strong>Losses:</strong> {opponentStats.losses}
-          </p>
-          <p className='text-gray-700'>
-            <strong>Win Rate:</strong>{' '}
-            {opponentStats.totalMatches
-              ? `${(
-                  (opponentStats.wins / opponentStats.totalMatches) *
-                  100
-                ).toFixed(2)}%`
-              : '0%'}
-          </p>
-          <p className='text-gray-700'>
-            <strong>Biggest Win Margin:</strong> {opponentStats.maxWinMargin}
-          </p>
-          <p className='text-gray-700'>
-            <strong>Biggest Loss Margin:</strong>{' '}
-            {Math.abs(opponentStats.maxLossMargin)}
-          </p>
-          <p className='text-gray-700'>
-            <strong>Gained Scores:</strong> {opponentStats.gainedScores}
-          </p>
-          <p className='text-gray-700'>
-            <strong>Lost Scores:</strong> {opponentStats.lostScores}
-          </p>
-          <p className='text-gray-700'>
-            <strong>Score Difference:</strong>{' '}
-            {opponentStats.gainedScores - opponentStats.lostScores}
-          </p>
-
-          <p className='text-gray-700'>
-            <strong>Longest Win Streak:</strong> {opponentStats.maxWinStreak}
-          </p>
-          <p className='text-gray-700'>
-            <strong>Longest Loss Streak:</strong> {opponentStats.maxLossStreak}
-          </p>
-        </div>
+        <h3 className='text-xl font-outfit font-bold mb-4 text-gray-700'>
+          Statistics against{' '}
+          {opponentsList.find((o) => o.id === selectedOpponent)?.name}
+        </h3>
+      
+        <p className='text-gray-700'>
+          <strong data-tooltip-id="total-matches-tooltip" data-tooltip-content="Total number of matches played against this opponent.">
+            Matches Played:
+          </strong>{' '}
+          {opponentStats.totalMatches}
+          <Tooltip id="total-matches-tooltip" />
+        </p>
+      
+        <p className='text-gray-700'>
+          <strong data-tooltip-id="wins-tooltip" data-tooltip-content="Total number of matches you won against this opponent.">
+            Matches Won:
+          </strong>{' '}
+          {opponentStats.wins}
+          <Tooltip id="wins-tooltip" />
+        </p>
+      
+        <p className='text-gray-700'>
+          <strong data-tooltip-id="losses-tooltip" data-tooltip-content="Total number of matches you lost against this opponent.">
+            Matches Lost:
+          </strong>{' '}
+          {opponentStats.losses}
+          <Tooltip id="losses-tooltip" />
+        </p>
+      
+        <p className='text-gray-700'>
+          <strong data-tooltip-id="win-rate-tooltip" data-tooltip-content="Percentage of matches won against this opponent.">
+            Win Percentage:
+          </strong>{' '}
+          {opponentStats.totalMatches
+            ? `${(
+                (opponentStats.wins / opponentStats.totalMatches) *
+                100
+              ).toFixed(2)}%`
+            : '0%'}
+          <Tooltip id="win-rate-tooltip" />
+        </p>
+      
+        <p className='text-gray-700'>
+          <strong data-tooltip-id="biggest-win-tooltip" data-tooltip-content="The largest score difference in a match you won. For example, a match ending 11-2 results in a margin of 9.">
+            Best Win Margin:
+          </strong>{' '}
+          {opponentStats.maxWinMargin}
+          <Tooltip id="biggest-win-tooltip" />
+        </p>
+      
+        <p className='text-gray-700'>
+          <strong data-tooltip-id="biggest-loss-tooltip" data-tooltip-content="The largest score difference in a match you lost. For example, a match ending 2-11 results in a margin of 9.">
+            Worst Loss Margin:
+          </strong>{' '}
+          {Math.abs(opponentStats.maxLossMargin)}
+          <Tooltip id="biggest-loss-tooltip" />
+        </p>
+      
+        <p className='text-gray-700'>
+          <strong data-tooltip-id="gained-scores-tooltip" data-tooltip-content="The total number of points you scored against this opponent in all matches.">
+            Points Scored:
+          </strong>{' '}
+          {opponentStats.gainedScores}
+          <Tooltip id="gained-scores-tooltip" />
+        </p>
+      
+        <p className='text-gray-700'>
+          <strong data-tooltip-id="lost-scores-tooltip" data-tooltip-content="The total number of points scored by your opponent in all matches.">
+            Points Conceded:
+          </strong>{' '}
+          {opponentStats.lostScores}
+          <Tooltip id="lost-scores-tooltip" />
+        </p>
+      
+        <p className='text-gray-700'>
+          <strong data-tooltip-id="score-difference-tooltip" data-tooltip-content="The difference between points you scored and points conceded. A positive value indicates you scored more points than you conceded.">
+            Points Difference:
+          </strong>{' '}
+          {opponentStats.gainedScores - opponentStats.lostScores}
+          <Tooltip id="score-difference-tooltip" />
+        </p>
+      
+        <p className='text-gray-700'>
+          <strong data-tooltip-id="longest-win-streak-tooltip" data-tooltip-content="The longest consecutive streak of wins against this opponent.">
+            Longest Winning Streak:
+          </strong>{' '}
+          {opponentStats.maxWinStreak}
+          <Tooltip id="longest-win-streak-tooltip" />
+        </p>
+      
+        <p className='text-gray-700'>
+          <strong data-tooltip-id="longest-loss-streak-tooltip" data-tooltip-content="The longest consecutive streak of losses against this opponent.">
+            Longest Losing Streak:
+          </strong>{' '}
+          {opponentStats.maxLossStreak}
+          <Tooltip id="longest-loss-streak-tooltip" />
+        </p>
+      </div>
       )}
 
       <h2 className='text-2xl font-outfit font-bold mb-4'>Last Matches</h2>
