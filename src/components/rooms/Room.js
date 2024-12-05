@@ -367,7 +367,7 @@ const Room = () => {
         </div>
       </div>
 
-      {(userRole === 'admin' || userRole === 'editor') && (
+      {(userRole === 'admin' || userRole === 'editor' || userRole === 'viewer') && (
         <MatchForm
           roomId={roomId}
           updatePlayerList={updatePlayerList}
