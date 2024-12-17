@@ -17,6 +17,10 @@ import { db } from '../firebase';
 const PlayerList = ({ players, loading, userRole, roomId }) => {
   const [members, setMembers] = useState([]);
   const [updatedStats, setUpdatedStats] = useState({});
+  const [sortConfig, setSortConfig] = useState({
+    key: 'rating',
+    direction: 'descending',
+  });
 
   const getHiddenRankExplanations = () => {
     return `
@@ -129,7 +133,7 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
       'https://bekindcult.fi/wp-content/uploads/2024/10/smash-samurai.png',
       'https://bekindcult.fi/wp-content/uploads/2024/10/ping-pong-paladin.png',
     ];
-  
+
     if (maxRating < 1001) {
       return rankUrls[0];
     } else if (maxRating < 1100) {
@@ -145,20 +149,20 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
     } else {
       return rankUrls[6];
     }
-  };  
+  };
 
   const getCachedImageUrl = (userId, maxRating) => {
     const cacheKey = `imageUrl-${userId}-${maxRating}`;
     const cachedUrl = localStorage.getItem(cacheKey);
-    
+
     if (cachedUrl) {
-      return cachedUrl; 
+      return cachedUrl;
     } else {
       const newUrl = getRankUrl(maxRating);
-      localStorage.setItem(cacheKey, newUrl); 
+      localStorage.setItem(cacheKey, newUrl);
       return newUrl;
     }
-  };  
+  };
 
   const updateRoomMembers = async () => {
     try {
@@ -219,6 +223,14 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
     return totalMatches === 0 ? 0 : ((wins / totalMatches) * 100).toFixed(2);
   };
 
+  const handleSort = (key) => {
+    let direction = 'ascending';
+    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
+
   const sortedPlayers = [...members]
     .map((player) => {
       const totalMatches = (player.wins || 0) + (player.losses || 0);
@@ -226,11 +238,19 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
         ...player,
         totalMatches,
         ratingVisible: totalMatches >= 5,
+        winPercentage:
+          totalMatches === 0
+            ? 0
+            : ((player.wins / totalMatches) * 100).toFixed(2),
       };
     })
     .sort((a, b) => {
       if (a.ratingVisible === b.ratingVisible) {
-        return b.rating - a.rating;
+        if (sortConfig.direction === 'ascending') {
+          return a[sortConfig.key] > b[sortConfig.key] ? 1 : -1;
+        } else {
+          return a[sortConfig.key] < b[sortConfig.key] ? 1 : -1;
+        }
       }
       return a.ratingVisible ? -1 : 1;
     });
@@ -246,37 +266,49 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
               <thead>
                 <tr>
                   <th
-                    scope='col'
-                    className='py-3 px-6 bg-gray-200 text-left text-xs font-medium text-gray-700 uppercase tracking-wider'
+                    onClick={() => handleSort('name')}
+                    className='cursor-pointer px-6 py-3 bg-gray-200 text-left text-xs font-medium text-gray-700 uppercase tracking-wider'
                   >
-                    Name
+                    Name{' '}
+                    {sortConfig.key === 'name'
+                      ? sortConfig.direction === 'ascending'
+                        ? '↑'
+                        : '↓'
+                      : '↕'}
                   </th>
                   <th
-                    scope='col'
-                    className='py-3 px-6 bg-gray-200 text-left text-xs font-medium text-gray-700 uppercase tracking-wider'
+                    onClick={() => handleSort('rating')}
+                    className='cursor-pointer px-6 py-3 bg-gray-200 text-left text-xs font-medium text-gray-700 uppercase tracking-wider'
                   >
-                    Points
+                    Points{' '}
+                    {sortConfig.key === 'rating'
+                      ? sortConfig.direction === 'ascending'
+                        ? '↑'
+                        : '↓'
+                      : '↕'}
                   </th>
                   <th
-                    scope='col'
-                    className='py-3 px-6 bg-gray-200 text-left text-xs font-medium text-gray-700 uppercase tracking-wider'
+                    onClick={() => handleSort('totalMatches')}
+                    className='cursor-pointer px-6 py-3 bg-gray-200 text-left text-xs font-medium text-gray-700 uppercase tracking-wider'
                   >
-                    Matches Played
+                    Matches Played{' '}
+                    {sortConfig.key === 'totalMatches'
+                      ? sortConfig.direction === 'ascending'
+                        ? '↑'
+                        : '↓'
+                      : '↕'}
                   </th>
                   <th
-                    scope='col'
-                    className='py-3 px-6 bg-gray-200 text-left text-xs font-medium text-gray-700 uppercase tracking-wider'
+                    onClick={() => handleSort('winPercentage')}
+                    className='cursor-pointer px-6 py-3 bg-gray-200 text-left text-xs font-medium text-gray-700 uppercase tracking-wider'
                   >
-                    Wins %
+                    Wins %{' '}
+                    {sortConfig.key === 'winPercentage'
+                      ? sortConfig.direction === 'ascending'
+                        ? '↑'
+                        : '↓'
+                      : '↕'}
                   </th>
-                  {(userRole === 'admin' || userRole === 'editor') && (
-                    <th
-                      scope='col'
-                      className='py-3 px-6 bg-gray-200 text-right text-xs font-medium text-gray-700 uppercase tracking-wider'
-                    >
-                      Action
-                    </th>
-                  )}
                 </tr>
               </thead>
               <tbody className='divide-y divide-gray-200'>
@@ -312,96 +344,92 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
                     </td>
                   </tr>
                 ) : (
-                  sortedPlayers.map(
-                    (player) => (
-                      (
-                        <tr
-                          key={player.userId}
-                          className='hover:bg-gray-50 transition duration-200 ease-in-out'
-                        >
-                          <td className='py-4 px-6 text-sm font-medium text-gray-900 whitespace-nowrap'>
-                            <div className='flex items-center space-x-3'>
-                              {player.ratingVisible ? (
-                                <LazyLoadImage
-                                src={getCachedImageUrl(player.userId, player.maxRating)}
-                                alt={player.name}
-                                className='h-8 w-8 mr-2'
-                                effect='opacity'
-                                placeholderSrc='https://bekindcult.fi/wp-content/uploads/2024/10/unknown-1.webp'
-                              />
-                              ) : (
-                                <LazyLoadImage
-                                  src='https://bekindcult.fi/wp-content/uploads/2024/10/unknown-1.webp'
-                                  alt={player.name}
-                                  className='h-8 w-8 mr-2'
-                                  effect='opacity'
-                                />
+                  sortedPlayers.map((player) => (
+                    <tr
+                      key={player.userId}
+                      className='hover:bg-gray-50 transition duration-200 ease-in-out'
+                    >
+                      <td className='py-4 px-6 text-sm font-medium text-gray-900 whitespace-nowrap'>
+                        <div className='flex items-center space-x-3'>
+                          {player.ratingVisible ? (
+                            <LazyLoadImage
+                              src={getCachedImageUrl(
+                                player.userId,
+                                player.maxRating
                               )}
-                              <Link
-                                to={`/player/${player.userId}`}
-                                className='text-lg font-semibold hover:text-blue-600 transition duration-200'
-                              >
-                                {player.name}
-                              </Link>
-                            </div>
-                          </td>
-                          <td className='py-4 px-6 text-sm text-gray-900 whitespace-nowrap'>
-                            {player.ratingVisible ? (
-                              <span>{player.rating}</span>
-                            ) : (
-                              <span
-                                data-tooltip-id='rank-tooltip'
-                                data-tooltip-html={rankExplanations}
-                              >
-                                Hidden
-                                <Tooltip id='rank-tooltip' />
-                              </span>
-                            )}
-                          </td>
-                          <td className='py-4 px-6 text-sm text-gray-900 whitespace-nowrap'>
-                            {player.totalMatches}
-                          </td>
-                          <td className='py-4 px-6 text-sm text-gray-900 whitespace-nowrap'>
-                            {player.ratingVisible ? (
-                              <span>
-                                {calculateWinPercentage(
-                                  player.wins,
-                                  player.losses
-                                )}
-                                %
-                              </span>
-                            ) : (
-                              'Hidden'
-                            )}
-                          </td>
-                          {(userRole === 'admin' || userRole === 'editor') && (
-                            <td className='py-4 px-6 flex justify-end text-sm font-medium whitespace-nowrap'>
-                              <button
-                                onClick={() =>
-                                  deletePlayerConfirmationModal(player.userId)
-                                }
-                                className='flex items-center justify-end bg-gray-100 text-gray-800 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 transition duration-200 ease-in-out rounded px-2 py-1'
-                              >
-                                <svg
-                                  xmlns='http://www.w3.org/2000/svg'
-                                  className='h-5 w-5 mr-1'
-                                  viewBox='0 0 20 20'
-                                  fill='currentColor'
-                                >
-                                  <path
-                                    fillRule='evenodd'
-                                    d='M6 2a1 1 0 00-.894.553L4 4H2a1 1 0 100 2h1.46l.52 9.25a2 2 0 001.995 1.75h8.05a2 2 0 001.995-1.75L16.54 6H18a1 1 0 100-2h-2l-1.106-1.447A1 1 0 0014 2H6zM6.2 4l.8 1h6l.8-1H6.2zM5.46 6h9.08l-.52 9.25a1 1 0 01-.998.75H6.978a1 1 0 01-.998-.75L5.46 6z'
-                                    clipRule='evenodd'
-                                  />
-                                </svg>
-                                Delete
-                              </button>
-                            </td>
+                              alt={player.name}
+                              className='h-8 w-8 mr-2'
+                              effect='opacity'
+                              placeholderSrc='https://bekindcult.fi/wp-content/uploads/2024/10/unknown-1.webp'
+                            />
+                          ) : (
+                            <LazyLoadImage
+                              src='https://bekindcult.fi/wp-content/uploads/2024/10/unknown-1.webp'
+                              alt={player.name}
+                              className='h-8 w-8 mr-2'
+                              effect='opacity'
+                            />
                           )}
-                        </tr>
-                      )
-                    )
-                  )
+                          <Link
+                            to={`/player/${player.userId}`}
+                            className='text-lg font-semibold hover:text-blue-600 transition duration-200'
+                          >
+                            {player.name}
+                          </Link>
+                        </div>
+                      </td>
+                      <td className='py-4 px-6 text-sm text-gray-900 whitespace-nowrap'>
+                        {player.ratingVisible ? (
+                          <span>{player.rating}</span>
+                        ) : (
+                          <span
+                            data-tooltip-id='rank-tooltip'
+                            data-tooltip-html={rankExplanations}
+                          >
+                            Hidden
+                            <Tooltip id='rank-tooltip' />
+                          </span>
+                        )}
+                      </td>
+                      <td className='py-4 px-6 text-sm text-gray-900 whitespace-nowrap'>
+                        {player.totalMatches}
+                      </td>
+                      <td className='py-4 px-6 text-sm text-gray-900 whitespace-nowrap'>
+                        {player.ratingVisible ? (
+                          <span>
+                            {calculateWinPercentage(player.wins, player.losses)}
+                            %
+                          </span>
+                        ) : (
+                          'Hidden'
+                        )}
+                      </td>
+                      {(userRole === 'admin' || userRole === 'editor') && (
+                        <td className='py-4 px-6 flex justify-end text-sm font-medium whitespace-nowrap'>
+                          <button
+                            onClick={() =>
+                              deletePlayerConfirmationModal(player.userId)
+                            }
+                            className='flex items-center justify-end bg-gray-100 text-gray-800 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 transition duration-200 ease-in-out rounded px-2 py-1'
+                          >
+                            <svg
+                              xmlns='http://www.w3.org/2000/svg'
+                              className='h-5 w-5 mr-1'
+                              viewBox='0 0 20 20'
+                              fill='currentColor'
+                            >
+                              <path
+                                fillRule='evenodd'
+                                d='M6 2a1 1 0 00-.894.553L4 4H2a1 1 0 100 2h1.46l.52 9.25a2 2 0 001.995 1.75h8.05a2 2 0 001.995-1.75L16.54 6H18a1 1 0 100-2h-2l-1.106-1.447A1 1 0 0014 2H6zM6.2 4l.8 1h6l.8-1H6.2zM5.46 6h9.08l-.52 9.25a1 1 0 01-.998.75H6.978a1 1 0 01-.998-.75L5.46 6z'
+                                clipRule='evenodd'
+                              />
+                            </svg>
+                            Delete
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  ))
                 )}
               </tbody>
             </table>
