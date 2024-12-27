@@ -1,7 +1,18 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-const RoomList = ({ rooms, loading }) => {
+const RoomList = ({ rooms, loading, currentUserId }) => {
+  const filteredRooms = rooms.filter((room) => {
+    if (room.id === 'lgNAJ8AaEUytVyLxx0Wv') {
+      const isMember = room.members.some(
+        (member) => member.userId === currentUserId
+      );
+      return isMember;
+    }
+
+    return true;
+  });
+
   return (
     <div className='flex flex-col'>
       <h2 className='text-2xl font-outfit font-bold mb-4 text-white'>Rooms</h2>
@@ -25,7 +36,7 @@ const RoomList = ({ rooms, loading }) => {
                       </td>
                     </tr>
                   ))
-                ) : rooms.length === 0 ? (
+                ) : filteredRooms.length === 0 ? (
                   <tr>
                     <td
                       colSpan={1}
@@ -35,7 +46,7 @@ const RoomList = ({ rooms, loading }) => {
                     </td>
                   </tr>
                 ) : (
-                  rooms.map((room) => (
+                  filteredRooms.map((room) => (
                     <tr key={room.id}>
                       <td className='py-4 px-6 text-sm font-medium text-gray-900 whitespace-nowrap'>
                         <Link

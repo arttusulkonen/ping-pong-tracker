@@ -17,6 +17,8 @@ import { db } from '../firebase';
 const PlayerList = ({ players, loading, userRole, roomId }) => {
   const [members, setMembers] = useState([]);
   const [updatedStats, setUpdatedStats] = useState({});
+  const [isFiltered, setIsFiltered] = useState(false);
+
   const [sortConfig, setSortConfig] = useState({
     key: 'rating',
     direction: 'descending',
@@ -257,8 +259,38 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
 
   const rankExplanations = getHiddenRankExplanations();
 
+  const toggleFilter = () => {
+    setIsFiltered((prev) => !prev);
+  };
+
+  const averageMatches =
+    sortedPlayers.reduce((acc, player) => acc + player.totalMatches, 0) /
+    sortedPlayers.length;
+
+  const displayedPlayers = isFiltered
+    ? sortedPlayers
+        .filter((player) => player.totalMatches >= averageMatches)
+        .concat(
+          sortedPlayers.filter((player) => player.totalMatches < averageMatches)
+        )
+    : sortedPlayers;
+
   return (
     <div className='flex flex-col'>
+      <div className='mb-4'>
+        <p className='text-white text-sm mb-2'>
+          This filter applies a "Fair Ranking" system, prioritizing players who
+          have played more matches. Players with matches above the average are
+          ranked higher, followed by others based on their points.
+        </p>
+        <button
+          onClick={toggleFilter}
+          className='bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 focus:outline-none'
+        >
+          {isFiltered ? 'Remove Fair Ranking' : 'Apply Fair Ranking'}
+        </button>
+      </div>
+
       <div className='-m-1.5 overflow-x-auto'>
         <div className='p-1.5 min-w-full inline-block align-middle'>
           <div className='overflow-hidden shadow-md'>
@@ -344,92 +376,100 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
                     </td>
                   </tr>
                 ) : (
-                  sortedPlayers.map((player) => (
-                    <tr
-                      key={player.userId}
-                      className='hover:bg-gray-50 transition duration-200 ease-in-out'
-                    >
-                      <td className='py-4 px-6 text-sm font-medium text-gray-900 whitespace-nowrap'>
-                        <div className='flex items-center space-x-3'>
-                          {player.ratingVisible ? (
-                            <LazyLoadImage
-                              src={getCachedImageUrl(
-                                player.userId,
-                                player.maxRating
-                              )}
-                              alt={player.name}
-                              className='h-8 w-8 mr-2'
-                              effect='opacity'
-                              placeholderSrc='https://bekindcult.fi/wp-content/uploads/2024/10/unknown-1.webp'
-                            />
-                          ) : (
-                            <LazyLoadImage
-                              src='https://bekindcult.fi/wp-content/uploads/2024/10/unknown-1.webp'
-                              alt={player.name}
-                              className='h-8 w-8 mr-2'
-                              effect='opacity'
-                            />
-                          )}
-                          <Link
-                            to={`/player/${player.userId}`}
-                            className='text-lg font-semibold hover:text-blue-600 transition duration-200'
-                          >
-                            {player.name}
-                          </Link>
-                        </div>
-                      </td>
-                      <td className='py-4 px-6 text-sm text-gray-900 whitespace-nowrap'>
-                        {player.ratingVisible ? (
-                          <span>{player.rating}</span>
-                        ) : (
-                          <span
-                            data-tooltip-id='rank-tooltip'
-                            data-tooltip-html={rankExplanations}
-                          >
-                            Hidden
-                            <Tooltip id='rank-tooltip' />
-                          </span>
-                        )}
-                      </td>
-                      <td className='py-4 px-6 text-sm text-gray-900 whitespace-nowrap'>
-                        {player.totalMatches}
-                      </td>
-                      <td className='py-4 px-6 text-sm text-gray-900 whitespace-nowrap'>
-                        {player.ratingVisible ? (
-                          <span>
-                            {calculateWinPercentage(player.wins, player.losses)}
-                            %
-                          </span>
-                        ) : (
-                          'Hidden'
-                        )}
-                      </td>
-                      {(userRole === 'admin' || userRole === 'editor') && (
-                        <td className='py-4 px-6 flex justify-end text-sm font-medium whitespace-nowrap'>
-                          <button
-                            onClick={() =>
-                              deletePlayerConfirmationModal(player.userId)
-                            }
-                            className='flex items-center justify-end bg-gray-100 text-gray-800 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 transition duration-200 ease-in-out rounded px-2 py-1'
-                          >
-                            <svg
-                              xmlns='http://www.w3.org/2000/svg'
-                              className='h-5 w-5 mr-1'
-                              viewBox='0 0 20 20'
-                              fill='currentColor'
-                            >
-                              <path
-                                fillRule='evenodd'
-                                d='M6 2a1 1 0 00-.894.553L4 4H2a1 1 0 100 2h1.46l.52 9.25a2 2 0 001.995 1.75h8.05a2 2 0 001.995-1.75L16.54 6H18a1 1 0 100-2h-2l-1.106-1.447A1 1 0 0014 2H6zM6.2 4l.8 1h6l.8-1H6.2zM5.46 6h9.08l-.52 9.25a1 1 0 01-.998.75H6.978a1 1 0 01-.998-.75L5.46 6z'
-                                clipRule='evenodd'
+                  displayedPlayers.map((player) => {
+                    console.log(player);
+                    const totalMatches =
+                      (player.wins || 0) + (player.losses || 0);
+                    return (
+                      <tr
+                        key={player.userId}
+                        className='hover:bg-gray-50 transition duration-200 ease-in-out'
+                      >
+                        <td className='py-4 px-6 text-sm font-medium text-gray-900 whitespace-nowrap'>
+                          <div className='flex items-center space-x-3'>
+                            {player.ratingVisible ? (
+                              <LazyLoadImage
+                                src={getCachedImageUrl(
+                                  player.userId,
+                                  player.maxRating
+                                )}
+                                alt={player.name}
+                                className='h-8 w-8 mr-2'
+                                effect='opacity'
+                                placeholderSrc='https://bekindcult.fi/wp-content/uploads/2024/10/unknown-1.webp'
                               />
-                            </svg>
-                            Delete
-                          </button>
+                            ) : (
+                              <LazyLoadImage
+                                src='https://bekindcult.fi/wp-content/uploads/2024/10/unknown-1.webp'
+                                alt={player.name}
+                                className='h-8 w-8 mr-2'
+                                effect='opacity'
+                              />
+                            )}
+                            <Link
+                              to={`/player/${player.userId}`}
+                              className='text-lg font-semibold hover:text-blue-600 transition duration-200'
+                            >
+                              {player.name}
+                            </Link>
+                          </div>
                         </td>
-                      )}
-                    </tr>
-                  ))
+                        <td className='py-4 px-6 text-sm text-gray-900 whitespace-nowrap'>
+                          {player.ratingVisible ? (
+                            <span>{player.rating}</span>
+                          ) : (
+                            <span
+                              data-tooltip-id='rank-tooltip'
+                              data-tooltip-html={rankExplanations}
+                            >
+                              Hidden
+                              <Tooltip id='rank-tooltip' />
+                            </span>
+                          )}
+                        </td>
+                        <td className='py-4 px-6 text-sm text-gray-900 whitespace-nowrap'>
+                          {totalMatches}
+                        </td>
+                        <td className='py-4 px-6 text-sm text-gray-900 whitespace-nowrap'>
+                          {player.ratingVisible ? (
+                            <span>
+                              {calculateWinPercentage(
+                                player.wins,
+                                player.losses
+                              )}
+                              %
+                            </span>
+                          ) : (
+                            'Hidden'
+                          )}
+                        </td>
+                        {(userRole === 'admin' || userRole === 'editor') && (
+                          <td className='py-4 px-6 flex justify-end text-sm font-medium whitespace-nowrap'>
+                            <button
+                              onClick={() =>
+                                deletePlayerConfirmationModal(player.userId)
+                              }
+                              className='flex items-center justify-end bg-gray-100 text-gray-800 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 transition duration-200 ease-in-out rounded px-2 py-1'
+                            >
+                              <svg
+                                xmlns='http://www.w3.org/2000/svg'
+                                className='h-5 w-5 mr-1'
+                                viewBox='0 0 20 20'
+                                fill='currentColor'
+                              >
+                                <path
+                                  fillRule='evenodd'
+                                  d='M6 2a1 1 0 00-.894.553L4 4H2a1 1 0 100 2h1.46l.52 9.25a2 2 0 001.995 1.75h8.05a2 2 0 001.995-1.75L16.54 6H18a1 1 0 100-2h-2l-1.106-1.447A1 1 0 0014 2H6zM6.2 4l.8 1h6l.8-1H6.2zM5.46 6h9.08l-.52 9.25a1 1 0 01-.998.75H6.978a1 1 0 01-.998-.75L5.46 6z'
+                                  clipRule='evenodd'
+                                />
+                              </svg>
+                              Delete
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
