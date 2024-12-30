@@ -377,7 +377,6 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
                   </tr>
                 ) : (
                   displayedPlayers.map((player) => {
-                    console.log(player);
                     const totalMatches =
                       (player.wins || 0) + (player.losses || 0);
                     return (
