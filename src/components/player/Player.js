@@ -16,7 +16,6 @@ import { useParams } from 'react-router-dom';
 import { Tooltip } from 'react-tooltip';
 import 'react-tooltip/dist/react-tooltip.css';
 import { auth, db } from '../../firebase';
-
 import {
   CategoryScale,
   Chart as ChartJS,
@@ -28,7 +27,6 @@ import {
   Title,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
-
 import zoomPlugin from 'chartjs-plugin-zoom';
 
 ChartJS.register(
@@ -54,7 +52,6 @@ const Player = ({ onNameUpdate }) => {
   const [error, setError] = useState(null);
   const [displayInput, setDisplayInput] = useState(false);
   const [user] = useAuthState(auth);
-
   const [selectedOpponent, setSelectedOpponent] = useState('');
   const [opponentsList, setOpponentsList] = useState([]);
   const [filteredMatches, setFilteredMatches] = useState([]);
@@ -111,7 +108,6 @@ const Player = ({ onNameUpdate }) => {
 
   const handleSaveName = async (e) => {
     e.preventDefault();
-
     if (!player.name.trim()) {
       Store.addNotification({
         title: 'Update failed',
@@ -128,30 +124,25 @@ const Player = ({ onNameUpdate }) => {
       });
       return;
     }
-
     try {
       const usersCollection = collection(db, 'users');
       const usersSnapshot = await getDocs(usersCollection);
       let isNicknameTaken = false;
-
-      usersSnapshot.forEach((doc) => {
+      usersSnapshot.forEach((docSnap) => {
         if (
-          doc.data().name.toLowerCase() === player.name.toLowerCase() &&
-          doc.id !== userId
+          docSnap.data().name.toLowerCase() === player.name.toLowerCase() &&
+          docSnap.id !== userId
         ) {
           isNicknameTaken = true;
         }
       });
-
       if (isNicknameTaken) {
         throw new Error('4');
       }
-
       await setDoc(doc(db, 'users', userId), {
         ...player,
         name: player.name,
       });
-
       const roomsCollection = collection(db, 'rooms');
       const roomsSnapshot = await getDocs(roomsCollection);
       for (const roomDoc of roomsSnapshot.docs) {
@@ -159,38 +150,31 @@ const Player = ({ onNameUpdate }) => {
         const updatedMembers = roomData.members.map((member) =>
           member.userId === userId ? { ...member, name: player.name } : member
         );
-
         await setDoc(doc(db, 'rooms', roomDoc.id), {
           ...roomData,
           members: updatedMembers,
         });
       }
-
       const matchesCollection = collection(db, 'matches');
       const matchesSnapshot = await getDocs(matchesCollection);
       for (const matchDoc of matchesSnapshot.docs) {
         const matchData = matchDoc.data();
         let updatedMatch = { ...matchData };
-
         if (matchData.player1Id === userId) {
           updatedMatch = {
             ...matchData,
             player1: { ...matchData.player1, name: player.name },
           };
         }
-
         if (matchData.player2Id === userId) {
           updatedMatch = {
             ...updatedMatch,
             player2: { ...matchData.player2, name: player.name },
           };
         }
-
         await setDoc(doc(db, 'matches', matchDoc.id), updatedMatch);
       }
-
       onNameUpdate(player.name);
-
       Store.addNotification({
         title: 'Success',
         message: 'Name updated successfully in all collections.',
@@ -204,8 +188,8 @@ const Player = ({ onNameUpdate }) => {
           onScreen: true,
         },
       });
-    } catch (error) {
-      if (error.message === '4') {
+    } catch (err) {
+      if (err.message === '4') {
         Store.addNotification({
           title: 'Update failed',
           message: 'Nickname is already taken. Please choose another one.',
@@ -222,7 +206,7 @@ const Player = ({ onNameUpdate }) => {
       }
     } finally {
       setDisplayInput(false);
-      await fetchMatches(); // Refresh matches
+      await fetchMatches();
     }
   };
 
@@ -230,7 +214,6 @@ const Player = ({ onNameUpdate }) => {
     try {
       const playerRef = doc(db, 'users', userId);
       const playerSnap = await getDoc(playerRef);
-
       if (playerSnap.exists()) {
         const playerData = playerSnap.data();
         setPlayer({
@@ -256,35 +239,14 @@ const Player = ({ onNameUpdate }) => {
         where('players', 'array-contains', userId)
       );
       const matchesSnapshot = await getDocs(q);
-      const matchesData = matchesSnapshot.docs.map((doc) => doc.data());
-
+      const matchesData = matchesSnapshot.docs.map((docSnap) => docSnap.data());
       const sortedMatches = matchesData.sort((a, b) => {
-        const [dayA, monthA, yearA, hourA, minuteA, secondA] =
-          a.timestamp.split(/[\s.:]/);
-        const [dayB, monthB, yearB, hourB, minuteB, secondB] =
-          b.timestamp.split(/[\s.:]/);
-
-        const dateA = new Date(
-          yearA,
-          monthA - 1,
-          dayA,
-          hourA,
-          minuteA,
-          secondA
-        );
-        const dateB = new Date(
-          yearB,
-          monthB - 1,
-          dayB,
-          hourB,
-          minuteB,
-          secondB
-        );
-
-        return dateB - dateA;
+        const [dA, mA, yA, hA, minA, sA] = a.timestamp.split(/[\s.:]/);
+        const [dB, mB, yB, hB, minB, sB] = b.timestamp.split(/[\s.:]/);
+        const dateA = new Date(yA, mA - 1, dA, hA, minA, sA);
+        const dateB = new Date(yB, mB - 1, dB, hB, minB, sB);
+        return dateA - dateB;
       });
-
-      // Extract unique opponents
       const opponentsSet = new Set();
       matchesData.forEach((match) => {
         const opponentId =
@@ -295,14 +257,12 @@ const Player = ({ onNameUpdate }) => {
           JSON.stringify({ id: opponentId, name: opponentName })
         );
       });
-
-      const opponentsList = Array.from(opponentsSet).map((item) =>
+      const opponents = Array.from(opponentsSet).map((item) =>
         JSON.parse(item)
       );
-
-      setOpponentsList(opponentsList);
+      setOpponentsList(opponents);
       setMatches(sortedMatches);
-      setFilteredMatches(sortedMatches); // Initially show all matches
+      setFilteredMatches(sortedMatches);
     } catch (err) {
       setError('Error fetching matches');
     } finally {
@@ -313,12 +273,9 @@ const Player = ({ onNameUpdate }) => {
   const handleOpponentChange = (e) => {
     const opponentId = e.target.value;
     setSelectedOpponent(opponentId);
-
     if (opponentId === '') {
-      // If no opponent is selected, show all matches
       setFilteredMatches(matches);
     } else {
-      // Filter matches by selected opponent
       const filtered = matches.filter((match) => {
         return match.player1Id === opponentId || match.player2Id === opponentId;
       });
@@ -334,137 +291,143 @@ const Player = ({ onNameUpdate }) => {
   }, [userId, fetchPlayer, fetchMatches]);
 
   useEffect(() => {
-    // Calculate overall win streaks
     const calculateWinStreaks = () => {
-      let maxWinStreak = 0;
-      let currentWinStreak = 0;
+      let localMaxWinStreak = 0;
+      let localCurrentWinStreak = 0;
       let tempCurrentWinStreak = 0;
-
-      const sortedMatches = [...matches].sort(
-        (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
-      );
-
-      for (let match of sortedMatches) {
+      const reversedMatches = [...matches].reverse();
+      for (let match of reversedMatches) {
         const isWinner =
           (match.player1Id === userId && match.winner === match.player1.name) ||
           (match.player2Id === userId && match.winner === match.player2.name);
-
         if (isWinner) {
           tempCurrentWinStreak++;
         } else {
           break;
         }
       }
-
-      currentWinStreak = tempCurrentWinStreak;
-
+      localCurrentWinStreak = tempCurrentWinStreak;
       let tempMaxWinStreak = 0;
-      for (let match of sortedMatches) {
+      for (let match of matches) {
         const isWinner =
           (match.player1Id === userId && match.winner === match.player1.name) ||
           (match.player2Id === userId && match.winner === match.player2.name);
-
         if (isWinner) {
           tempMaxWinStreak++;
-          if (tempMaxWinStreak > maxWinStreak) {
-            maxWinStreak = tempMaxWinStreak;
+          if (tempMaxWinStreak > localMaxWinStreak) {
+            localMaxWinStreak = tempMaxWinStreak;
           }
         } else {
           tempMaxWinStreak = 0;
         }
       }
-
-      setMaxWinStreak(maxWinStreak);
-      setCurrentWinStreak(currentWinStreak);
+      setMaxWinStreak(localMaxWinStreak);
+      setCurrentWinStreak(localCurrentWinStreak);
     };
-
-    calculateWinStreaks();
+    if (matches.length > 0) {
+      calculateWinStreaks();
+    }
   }, [matches, userId]);
 
+  const calculateStats = useCallback(
+    (someMatches) => {
+      if (!someMatches || someMatches.length === 0) {
+        return null;
+      }
+      let wins = 0;
+      let losses = 0;
+      let maxWinMargin = null;
+      let maxLossMargin = null;
+      let currentWS = 0;
+      let maxWS = 0;
+      let currentLS = 0;
+      let maxLS = 0;
+      const sorted = [...someMatches].sort(
+        (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
+      );
+      sorted.forEach((match) => {
+        const isWinner =
+          (match.player1Id === userId && match.winner === match.player1.name) ||
+          (match.player2Id === userId && match.winner === match.player2.name);
+        const playerScore =
+          match.player1Id === userId
+            ? match.player1.scores
+            : match.player2.scores;
+        const opponentScore =
+          match.player1Id === userId
+            ? match.player2.scores
+            : match.player1.scores;
+        const scoreMargin = playerScore - opponentScore;
+        if (isWinner) {
+          wins++;
+          currentWS++;
+          currentLS = 0;
+          if (currentWS > maxWS) {
+            maxWS = currentWS;
+          }
+          if (maxWinMargin === null || scoreMargin > maxWinMargin) {
+            maxWinMargin = scoreMargin;
+          }
+        } else {
+          losses++;
+          currentLS++;
+          currentWS = 0;
+          if (currentLS > maxLS) {
+            maxLS = currentLS;
+          }
+          if (maxLossMargin === null || scoreMargin < maxLossMargin) {
+            maxLossMargin = scoreMargin;
+          }
+        }
+      });
+      const gainedScores = sorted.reduce((acc, match) => {
+        if (match.player1Id === userId) {
+          return acc + match.player1.scores;
+        } else {
+          return acc + match.player2.scores;
+        }
+      }, 0);
+      const lostScores = sorted.reduce((acc, match) => {
+        if (match.player1Id === userId) {
+          return acc + match.player2.scores;
+        } else {
+          return acc + match.player1.scores;
+        }
+      }, 0);
+      return {
+        totalMatches: wins + losses,
+        wins,
+        losses,
+        maxWinMargin,
+        maxLossMargin,
+        maxWinStreak: maxWS,
+        maxLossStreak: maxLS,
+        gainedScores,
+        lostScores,
+      };
+    },
+    [userId]
+  );
+
   useEffect(() => {
-    if (selectedOpponent === '' || filteredMatches.length === 0) {
+    if (!filteredMatches.length) {
       setOpponentStats(null);
       return;
     }
-
-    let wins = 0;
-    let losses = 0;
-    let maxWinMargin = null;
-    let maxLossMargin = null;
-    let currentWinStreak = 0;
-    let maxWinStreak = 0;
-    let currentLossStreak = 0;
-    let maxLossStreak = 0;
-
-    // Sort matches by date
-    const sortedMatches = [...filteredMatches].sort(
-      (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
-    );
-
-    sortedMatches.forEach((match) => {
-      const isWinner =
-        (match.player1Id === userId && match.winner === match.player1.name) ||
-        (match.player2Id === userId && match.winner === match.player2.name);
-
-      const opponentScore =
-        match.player1Id === selectedOpponent
-          ? match.player1.scores
-          : match.player2.scores;
-      const playerScore =
-        match.player1Id === userId
-          ? match.player1.scores
-          : match.player2.scores;
-
-      const scoreMargin = playerScore - opponentScore;
-
-      if (isWinner) {
-        wins++;
-        currentWinStreak++;
-        currentLossStreak = 0;
-        if (currentWinStreak > maxWinStreak) maxWinStreak = currentWinStreak;
-
-        // Biggest win
-        if (maxWinMargin === null || scoreMargin > maxWinMargin) {
-          maxWinMargin = scoreMargin;
-        }
-      } else {
-        losses++;
-        currentLossStreak++;
-        currentWinStreak = 0;
-        if (currentLossStreak > maxLossStreak)
-          maxLossStreak = currentLossStreak;
-
-        // Biggest loss
-        if (maxLossMargin === null || scoreMargin < maxLossMargin) {
-          maxLossMargin = scoreMargin;
-        }
-      }
-    });
-
-    setOpponentStats({
-      totalMatches: wins + losses,
-      wins,
-      losses,
-      maxWinMargin,
-      maxLossMargin,
-      maxWinStreak,
-      maxLossStreak,
-      gainedScores: sortedMatches.reduce((acc, match) => {
-        if (match.player1Id === userId) {
-          return acc + match.player1.scores;
-        } else {
-          return acc + match.player2.scores;
-        }
-      }, 0),
-      lostScores: sortedMatches.reduce((acc, match) => {
-        if (match.player1Id === userId) {
-          return acc + match.player2.scores;
-        } else {
-          return acc + match.player1.scores;
-        }
-      }, 0),
-    });
-  }, [selectedOpponent, filteredMatches, userId]);
+    if (selectedOpponent === '') {
+      const overallStats = calculateStats(filteredMatches);
+      setOpponentStats(overallStats);
+    } else {
+      const specificMatches = filteredMatches.filter((match) => {
+        return (
+          match.player1Id === selectedOpponent ||
+          match.player2Id === selectedOpponent
+        );
+      });
+      const stats = calculateStats(specificMatches);
+      setOpponentStats(stats);
+    }
+  }, [selectedOpponent, filteredMatches, userId, calculateStats]);
 
   if (error) {
     return <div className='text-red-500'>{error}</div>;
@@ -474,25 +437,21 @@ const Player = ({ onNameUpdate }) => {
   const rankExplanations = getAllRankExplanations();
 
   const getChartData = () => {
-    if (!filteredMatches || filteredMatches.length === 0) return null;
-  
+    if (!opponentStats || !filteredMatches.length) return null;
+    const sorted = [...filteredMatches].sort(
+      (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
+    );
     const dates = [];
     const results = [];
-  
-    filteredMatches
-      .slice() 
-      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)) 
-      .forEach((match) => {
-        const isWinner =
-          (match.player1Id === userId && match.winner === match.player1.name) ||
-          (match.player2Id === userId && match.winner === match.player2.name);
-  
-        dates.push(match.timestamp.split(' ')[0]);
-        results.push(isWinner ? 1 : -1);
-      });
-  
+    sorted.forEach((match) => {
+      const isWinner =
+        (match.player1Id === userId && match.winner === match.player1.name) ||
+        (match.player2Id === userId && match.winner === match.player2.name);
+      dates.push(match.timestamp.split(' ')[0]);
+      results.push(isWinner ? 1 : -1);
+    });
     return {
-      labels: dates, 
+      labels: dates,
       datasets: [
         {
           label: 'Match Results',
@@ -505,31 +464,26 @@ const Player = ({ onNameUpdate }) => {
       ],
     };
   };
-  
 
   const getScoreDifferenceData = () => {
-    if (!filteredMatches || filteredMatches.length === 0) return null;
-  
+    if (!opponentStats || !filteredMatches.length) return null;
+    const sorted = [...filteredMatches].sort(
+      (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
+    );
     const dates = [];
     const differences = [];
-  
-    filteredMatches
-      .slice()
-      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)) 
-      .forEach((match) => {
-        const playerScore =
-          match.player1Id === userId
-            ? match.player1.scores
-            : match.player2.scores;
-        const opponentScore =
-          match.player1Id === userId
-            ? match.player2.scores
-            : match.player1.scores;
-  
-        dates.push(match.timestamp.split(' ')[0]);
-        differences.push(playerScore - opponentScore);
-      });
-  
+    sorted.forEach((match) => {
+      const playerScore =
+        match.player1Id === userId
+          ? match.player1.scores
+          : match.player2.scores;
+      const opponentScore =
+        match.player1Id === userId
+          ? match.player2.scores
+          : match.player1.scores;
+      dates.push(match.timestamp.split(' ')[0]);
+      differences.push(playerScore - opponentScore);
+    });
     return {
       labels: dates,
       datasets: [
@@ -544,27 +498,22 @@ const Player = ({ onNameUpdate }) => {
       ],
     };
   };
-  
 
   const getRatingData = () => {
-    if (!filteredMatches || filteredMatches.length === 0) return null;
-  
+    if (!opponentStats || !filteredMatches.length) return null;
+    const sorted = [...filteredMatches].sort(
+      (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
+    );
     const dates = [];
     const ratings = [];
-  
-    filteredMatches
-      .slice()
-      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
-      .forEach((match) => {
-        const rating =
-          match.player1Id === userId
-            ? match.player1.newRating
-            : match.player2.newRating;
-  
-        dates.push(match.timestamp.split(' ')[0]);
-        ratings.push(rating);
-      });
-  
+    sorted.forEach((match) => {
+      const rating =
+        match.player1Id === userId
+          ? match.player1.newRating
+          : match.player2.newRating;
+      dates.push(match.timestamp.split(' ')[0]);
+      ratings.push(rating);
+    });
     return {
       labels: dates,
       datasets: [
@@ -579,7 +528,6 @@ const Player = ({ onNameUpdate }) => {
       ],
     };
   };
-  
 
   return (
     <div className='container mx-auto px-4 py-8'>
@@ -651,9 +599,7 @@ const Player = ({ onNameUpdate }) => {
                 <p className='text-gray-700'>
                   <strong>Win Rate:</strong>{' '}
                   {player.totalMatches
-                    ? `${((player.wins / player.totalMatches) * 100).toFixed(
-                        2
-                      )}%`
+                    ? `${((player.wins / player.totalMatches) * 100).toFixed(2)}%`
                     : '0%'}
                 </p>
                 <p className='text-gray-700'>
@@ -665,7 +611,6 @@ const Player = ({ onNameUpdate }) => {
               </>
             )}
           </div>
-
           <div className='w-full sm:w-1/2 flex justify-center sm:justify-end mt-6 sm:mt-0'>
             {rank && (
               <div
@@ -685,7 +630,6 @@ const Player = ({ onNameUpdate }) => {
           </div>
         </div>
       </div>
-
       <h2 className='text-2xl font-outfit font-bold mb-4'>
         Filter by Opponent
       </h2>
@@ -701,140 +645,58 @@ const Player = ({ onNameUpdate }) => {
           </option>
         ))}
       </select>
-
       {opponentStats && (
         <div className='bg-white shadow rounded-lg p-6 mb-8'>
-          <h3 className='text-xl font-outfit font-bold mb-4 text-gray-700'>
-            Statistics against{' '}
-            {opponentsList.find((o) => o.id === selectedOpponent)?.name}
-          </h3>
-
+          {selectedOpponent === '' ? (
+            <h3 className='text-xl font-outfit font-bold mb-4 text-gray-700'>
+              Overall Statistics (All Matches)
+            </h3>
+          ) : (
+            <h3 className='text-xl font-outfit font-bold mb-4 text-gray-700'>
+              Statistics against{' '}
+              {opponentsList.find((o) => o.id === selectedOpponent)?.name}
+            </h3>
+          )}
           <p className='text-gray-700'>
-            <strong
-              data-tooltip-id='total-matches-tooltip'
-              data-tooltip-content='Total number of matches played against this opponent.'
-            >
-              Matches Played:
-            </strong>{' '}
-            {opponentStats.totalMatches}
-            <Tooltip id='total-matches-tooltip' />
+            <strong>Matches Played:</strong> {opponentStats.totalMatches}
           </p>
-
           <p className='text-gray-700'>
-            <strong
-              data-tooltip-id='wins-tooltip'
-              data-tooltip-content='Total number of matches you won against this opponent.'
-            >
-              Matches Won:
-            </strong>{' '}
-            {opponentStats.wins}
-            <Tooltip id='wins-tooltip' />
+            <strong>Matches Won:</strong> {opponentStats.wins}
           </p>
-
           <p className='text-gray-700'>
-            <strong
-              data-tooltip-id='losses-tooltip'
-              data-tooltip-content='Total number of matches you lost against this opponent.'
-            >
-              Matches Lost:
-            </strong>{' '}
-            {opponentStats.losses}
-            <Tooltip id='losses-tooltip' />
+            <strong>Matches Lost:</strong> {opponentStats.losses}
           </p>
-
           <p className='text-gray-700'>
-            <strong
-              data-tooltip-id='win-rate-tooltip'
-              data-tooltip-content='Percentage of matches won against this opponent.'
-            >
-              Win Percentage:
-            </strong>{' '}
+            <strong>Win Percentage:</strong>{' '}
             {opponentStats.totalMatches
-              ? `${(
-                  (opponentStats.wins / opponentStats.totalMatches) *
-                  100
-                ).toFixed(2)}%`
+              ? `${((opponentStats.wins / opponentStats.totalMatches) * 100).toFixed(2)}%`
               : '0%'}
-            <Tooltip id='win-rate-tooltip' />
           </p>
-
           <p className='text-gray-700'>
-            <strong
-              data-tooltip-id='biggest-win-tooltip'
-              data-tooltip-content='The largest score difference in a match you won. For example, a match ending 11-2 results in a margin of 9.'
-            >
-              Best Win Margin:
-            </strong>{' '}
-            {opponentStats.maxWinMargin}
-            <Tooltip id='biggest-win-tooltip' />
+            <strong>Best Win Margin:</strong> {opponentStats.maxWinMargin}
           </p>
-
           <p className='text-gray-700'>
-            <strong
-              data-tooltip-id='biggest-loss-tooltip'
-              data-tooltip-content='The largest score difference in a match you lost. For example, a match ending 2-11 results in a margin of 9.'
-            >
-              Worst Loss Margin:
-            </strong>{' '}
+            <strong>Worst Loss Margin:</strong>{' '}
             {Math.abs(opponentStats.maxLossMargin)}
-            <Tooltip id='biggest-loss-tooltip' />
           </p>
-
           <p className='text-gray-700'>
-            <strong
-              data-tooltip-id='gained-scores-tooltip'
-              data-tooltip-content='The total number of points you scored against this opponent in all matches.'
-            >
-              Points Scored:
-            </strong>{' '}
-            {opponentStats.gainedScores}
-            <Tooltip id='gained-scores-tooltip' />
+            <strong>Points Scored:</strong> {opponentStats.gainedScores}
           </p>
-
           <p className='text-gray-700'>
-            <strong
-              data-tooltip-id='lost-scores-tooltip'
-              data-tooltip-content='The total number of points scored by your opponent in all matches.'
-            >
-              Points Conceded:
-            </strong>{' '}
-            {opponentStats.lostScores}
-            <Tooltip id='lost-scores-tooltip' />
+            <strong>Points Conceded:</strong> {opponentStats.lostScores}
           </p>
-
           <p className='text-gray-700'>
-            <strong
-              data-tooltip-id='score-difference-tooltip'
-              data-tooltip-content='The difference between points you scored and points conceded. A positive value indicates you scored more points than you conceded.'
-            >
-              Points Difference:
-            </strong>{' '}
+            <strong>Points Difference:</strong>{' '}
             {opponentStats.gainedScores - opponentStats.lostScores}
-            <Tooltip id='score-difference-tooltip' />
           </p>
-
           <p className='text-gray-700'>
-            <strong
-              data-tooltip-id='longest-win-streak-tooltip'
-              data-tooltip-content='The longest consecutive streak of wins against this opponent.'
-            >
-              Longest Winning Streak:
-            </strong>{' '}
+            <strong>Longest Winning Streak:</strong>{' '}
             {opponentStats.maxWinStreak}
-            <Tooltip id='longest-win-streak-tooltip' />
           </p>
-
           <p className='text-gray-700'>
-            <strong
-              data-tooltip-id='longest-loss-streak-tooltip'
-              data-tooltip-content='The longest consecutive streak of losses against this opponent.'
-            >
-              Longest Losing Streak:
-            </strong>{' '}
+            <strong>Longest Losing Streak:</strong>{' '}
             {opponentStats.maxLossStreak}
-            <Tooltip id='longest-loss-streak-tooltip' />
           </p>
-
           {filteredMatches.length > 0 && (
             <div className='bg-white shadow rounded-lg p-6 mb-8'>
               <h3 className='text-xl font-outfit font-bold mb-4 text-gray-700'>
@@ -850,7 +712,11 @@ const Player = ({ onNameUpdate }) => {
                       callbacks: {
                         label: (tooltipItem) => {
                           const matchIndex = tooltipItem.dataIndex;
-                          const match = filteredMatches[matchIndex];
+                          const sorted = [...filteredMatches].sort(
+                            (a, b) =>
+                              new Date(a.timestamp) - new Date(b.timestamp)
+                          );
+                          const match = sorted[matchIndex];
                           const winner = match.winner;
                           const playerScore =
                             match.player1Id === userId
@@ -864,7 +730,6 @@ const Player = ({ onNameUpdate }) => {
                             match.player1Id === userId
                               ? match.player1.newRating
                               : match.player2.newRating;
-
                           return [
                             `Winner: ${winner}`,
                             `Score: ${playerScore} - ${opponentScore}`,
@@ -902,12 +767,11 @@ const Player = ({ onNameUpdate }) => {
                         text: 'Values',
                       },
                     },
-                  },                  
+                  },
                 }}
               />
             </div>
           )}
-
           {filteredMatches.length > 0 && (
             <div className='bg-white shadow rounded-lg p-6 mb-8'>
               <h3 className='text-xl font-outfit font-bold mb-4 text-gray-700'>
@@ -923,7 +787,11 @@ const Player = ({ onNameUpdate }) => {
                       callbacks: {
                         label: (tooltipItem) => {
                           const matchIndex = tooltipItem.dataIndex;
-                          const match = filteredMatches[matchIndex];
+                          const sorted = [...filteredMatches].sort(
+                            (a, b) =>
+                              new Date(a.timestamp) - new Date(b.timestamp)
+                          );
+                          const match = sorted[matchIndex];
                           const playerScore =
                             match.player1Id === userId
                               ? match.player1.scores
@@ -934,7 +802,6 @@ const Player = ({ onNameUpdate }) => {
                               : match.player1.scores;
                           const scoreDifference = playerScore - opponentScore;
                           const winner = match.winner;
-
                           return [
                             `Winner: ${winner}`,
                             `Player Score: ${playerScore}`,
@@ -973,12 +840,11 @@ const Player = ({ onNameUpdate }) => {
                         text: 'Values',
                       },
                     },
-                  },                  
+                  },
                 }}
               />
             </div>
           )}
-
           {filteredMatches.length > 0 && (
             <div className='bg-white shadow rounded-lg p-6 mb-8'>
               <h3 className='text-xl font-outfit font-bold mb-4 text-gray-700'>
@@ -994,7 +860,11 @@ const Player = ({ onNameUpdate }) => {
                       callbacks: {
                         label: (tooltipItem) => {
                           const matchIndex = tooltipItem.dataIndex;
-                          const match = filteredMatches[matchIndex];
+                          const sorted = [...filteredMatches].sort(
+                            (a, b) =>
+                              new Date(a.timestamp) - new Date(b.timestamp)
+                          );
+                          const match = sorted[matchIndex];
                           const oldRating =
                             match.player1Id === userId
                               ? match.player1.oldRating
@@ -1004,7 +874,6 @@ const Player = ({ onNameUpdate }) => {
                               ? match.player1.newRating
                               : match.player2.newRating;
                           const ratingChange = newRating - oldRating;
-
                           return [
                             `Old Rating: ${oldRating}`,
                             `New Rating: ${newRating}`,
@@ -1046,14 +915,13 @@ const Player = ({ onNameUpdate }) => {
                         text: 'Values',
                       },
                     },
-                  },                  
+                  },
                 }}
               />
             </div>
           )}
         </div>
       )}
-
       <h2 className='text-2xl font-outfit font-bold mb-4'>Last Matches</h2>
       <div className='overflow-x-auto'>
         <table className='min-w-full bg-white shadow rounded-lg'>
