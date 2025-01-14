@@ -7,7 +7,7 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
-import { FaTrash } from 'react-icons/fa'; // Importing the trash icon
+import { FaTrash, FaSpinner } from 'react-icons/fa'; // Importing the trash icon
 import { Store } from 'react-notifications-component';
 import { db } from '../firebase';
 
@@ -17,13 +17,15 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
   const [player1, setPlayer1] = useState(''); // Holds the selected player1's name
   const [player2, setPlayer2] = useState(''); // Holds the selected player2's name
   const [matches, setMatches] = useState([{ score1: '', score2: '' }]); // Holds the matches and their scores
+  const [loading, setLoading] = useState(false);
 
-  // Fetches the list of players whenever the `playersList` prop updates and sets it to state
+  const isFormValid =
+    Boolean(player1 && player2) && matches.every((m) => m.score1 && m.score2);
+
   useEffect(() => {
     setPlayers(playersList);
   }, [playersList]);
 
-  // Returns the current date and time in Finnish format (dd.mm.yyyy hh.mm.ss)
   const getFinnishFormattedDate = () => {
     const now = new Date();
     const day = String(now.getDate()).padStart(2, '0');
@@ -35,17 +37,14 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
     return `${day}.${month}.${year} ${hours}.${minutes}.${seconds}`;
   };
 
-  // Calculates the new ELO rating based on player's current rating, opponent's rating, and the match result
   const calculateElo = (playerRating, opponentRating, score) => {
     const kFactor = 32;
     const expectedScore =
       1 / (1 + 10 ** ((opponentRating - playerRating) / 400));
     const newRating = playerRating + kFactor * (score - expectedScore);
-
     return Math.round(newRating);
   };
 
-  // Determines the player's rank based on their ELO rating
   const getRank = (maxRating) => {
     if (maxRating < 1001) return 'Ping Pong Padawan';
     if (maxRating < 1100) return 'Table Tennis Trainee';
@@ -56,7 +55,6 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
     return 'Ping Pong Paladin';
   };
 
-  // Updates the player's overall stats in the database, including rating, wins, losses, and rank
   const updatePlayerStats = async (playerId, newRating, wins, losses) => {
     if (!playerId) {
       console.error('Player ID is undefined');
@@ -67,7 +65,6 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
     try {
       const playerSnapshot = await getDoc(playerRef);
       const playerData = playerSnapshot.data();
-
       const adjustedRating = Math.round(newRating);
 
       // Calculate new maxRating
@@ -82,14 +79,13 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
         maxRating: newMaxRating,
         wins: wins,
         losses: losses,
-        rank: getRank(newMaxRating), // Use maxRating to determine rank
+        rank: getRank(newMaxRating),
       });
     } catch (error) {
       console.error(`Error updating player ${playerId}:`, error);
     }
   };
 
-  // Updates the player's room-specific stats (rating, wins, losses) within the specified room
   const updateRoomMemberStats = async (
     roomId,
     userId,
@@ -101,17 +97,16 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
       console.error('User ID is undefined');
       return;
     }
-    const roomRef = doc(db, 'rooms', roomId); // Reference to the room's document in the database
+    const roomRef = doc(db, 'rooms', roomId);
     try {
-      const roomDoc = await getDoc(roomRef); // Fetch the current data for the room
+      const roomDoc = await getDoc(roomRef);
       if (!roomDoc.exists()) {
         console.error(`Room ${roomId} not found!`);
         return;
       }
       const roomData = roomDoc.data();
-      const timestamp = getFinnishFormattedDate(); // Timestamp for when the match was updated
+      const timestamp = getFinnishFormattedDate();
 
-      // Updates the stats for the specific player in the room's members array
       const updatedMembers = roomData.members.map((member) => {
         if (member.userId === userId) {
           return {
@@ -124,56 +119,52 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
         }
         return member;
       });
-      await updateDoc(roomRef, { members: updatedMembers }); // Save the updated members array
+      await updateDoc(roomRef, { members: updatedMembers });
     } catch (error) {
       console.error(`Error updating room member ${userId}:`, error);
     }
   };
 
-  // Fetches all the players from the database and sets them in the `players` state
   const fetchPlayers = async () => {
-    const querySnapshot = await getDocs(collection(db, 'users')); // Fetch all documents from the 'users' collection
+    const querySnapshot = await getDocs(collection(db, 'users'));
     const playerList = [];
     querySnapshot.forEach((doc) => {
-      playerList.push({ id: doc.id, ...doc.data() }); // Add each player's data to the `playerList` array
+      playerList.push({ id: doc.id, ...doc.data() });
     });
-    setPlayers(playerList); // Update the state with the fetched players
+    setPlayers(playerList);
   };
 
-  // Handles form submission and processes each match result
   const handleSubmit = async (e) => {
-    e.preventDefault(); // Prevents the default form submission behavior
+    e.preventDefault();
+    setLoading(true);
 
-    // Validate that both inputs are filled for all matches
-    for (const match of matches) {
-      if (!match.score1 || !match.score2) {
-        Store.addNotification({
-          title: 'Error',
-          message: 'Please fill in both scores for all matches.',
-          type: 'danger',
-          insert: 'top',
-          container: 'top-right',
-          animationIn: ['animate__animated', 'animate__fadeIn'],
-          animationOut: ['animate__animated', 'animate__fadeOut'],
-          dismiss: { duration: 3000, onScreen: true },
-        });
-        return;
-      }
+    if (!isFormValid) {
+      Store.addNotification({
+        title: 'Error',
+        message: 'Please fill all required fields before submitting.',
+        type: 'danger',
+        insert: 'top',
+        container: 'top-right',
+        animationIn: ['animate__animated', 'animate__fadeIn'],
+        animationOut: ['animate__animated', 'animate__fadeOut'],
+        dismiss: { duration: 3000, onScreen: true },
+      });
+      setLoading(false);
+      return;
     }
 
-    for (const match of matches) {
-      const { score1, score2 } = match;
-      const score1Value = parseInt(score1); // Convert player 1's score to an integer
-      const score2Value = parseInt(score2); // Convert player 2's score to an integer
-      const timestamp = getFinnishFormattedDate(); // Get the current date and time
-      const winner = score1Value > score2Value ? player1 : player2; // Determine the winner based on scores
+    try {
+      for (const match of matches) {
+        const { score1, score2 } = match;
+        const score1Value = parseInt(score1);
+        const score2Value = parseInt(score2);
+        const timestamp = getFinnishFormattedDate();
+        const winner = score1Value > score2Value ? player1 : player2;
 
-      try {
         const player1Doc = players.find((player) => player.name === player1);
         const player2Doc = players.find((player) => player.name === player2);
 
         if (!player1Doc || !player2Doc) {
-          // If either player is invalid, show an error notification
           Store.addNotification({
             title: 'Error',
             message: 'Please select valid players',
@@ -187,37 +178,32 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
           return;
         }
 
-        // Fetch player stats from the database
         const player1Ref = doc(db, 'users', player1Doc.userId);
         const player2Ref = doc(db, 'users', player2Doc.userId);
         const player1Snapshot = await getDoc(player1Ref);
         const player2Snapshot = await getDoc(player2Ref);
+
         const player1OverallRating = player1Snapshot.data().rating || 1000;
         const player2OverallRating = player2Snapshot.data().rating || 1000;
-
         const player1OverallWins = player1Snapshot.data().wins || 0;
         const player1OverallLosses = player1Snapshot.data().losses || 0;
         const player2OverallWins = player2Snapshot.data().wins || 0;
         const player2OverallLosses = player2Snapshot.data().losses || 0;
 
-        // Assign 1 point to the winner and 0 to the loser for ELO calculation
         const player1Score = winner === player1 ? 1 : 0;
         const player2Score = winner === player2 ? 1 : 0;
 
-        // Calculate the new ratings for both players
         const newPlayer1Rating = calculateElo(
           player1OverallRating,
           player2OverallRating,
           player1Score
         );
-
         const newPlayer2Rating = calculateElo(
           player2OverallRating,
           player1OverallRating,
-          player2Score,
+          player2Score
         );
 
-        // Match data that will be stored in the database
         const matchData = {
           player1Id: player1Doc.userId,
           player2Id: player2Doc.userId,
@@ -241,14 +227,11 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
           winner: winner,
         };
 
-        // Add the match to the 'matches' collection in the database
         await addDoc(collection(db, 'matches'), matchData);
 
-        // Calculate earned points
         const player1EarnedPoints = newPlayer1Rating - player1OverallRating;
         const player2EarnedPoints = newPlayer2Rating - player2OverallRating;
 
-        // Update player ratings and win/loss records
         const newOverallPlayer1Rating =
           player1OverallRating + player1EarnedPoints;
         const newOverallPlayer2Rating =
@@ -262,7 +245,6 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
         const newPlayer2OverallLosses =
           winner === player2 ? player2OverallLosses : player2OverallLosses + 1;
 
-        // Update player stats in the database
         await updatePlayerStats(
           player1Doc.userId,
           newOverallPlayer1Rating,
@@ -276,7 +258,6 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
           newPlayer2OverallLosses
         );
 
-        // Update room-specific stats for the players
         const roomDoc = await getDoc(doc(db, 'rooms', roomId));
         if (!roomDoc.exists()) {
           console.error(`Room ${roomId} not found!`);
@@ -330,23 +311,22 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
           newPlayer2RoomWins,
           newPlayer2RoomLosses
         );
-      } catch (error) {
-        console.error('Error adding document:', error);
       }
+
+      setPlayer1('');
+      setPlayer2('');
+      setMatches([{ score1: '', score2: '' }]);
+
+      await fetchPlayers();
+      updatePlayerList();
+      onMatchAdded();
+    } catch (error) {
+      console.error('Error adding document:', error);
+    } finally {
+      setLoading(false);
     }
-
-    // Reset form inputs
-    setPlayer1('');
-    setPlayer2('');
-    setMatches([{ score1: '', score2: '' }]);
-
-    // Fetch updated players and notify the parent component that a match was added
-    await fetchPlayers();
-    updatePlayerList();
-    onMatchAdded();
   };
 
-  // Adds a new match input set
   const addMatch = () => {
     setMatches([...matches, { score1: '', score2: '' }]);
   };
@@ -470,9 +450,11 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
         <div className='flex justify-center mt-8'>
           <button
             type='submit'
-            className='bg-green-500 text-white font-semibold py-3 px-8 rounded-md hover:bg-green-600 transition-colors duration-200'
+            className='bg-green-500 text-white font-semibold py-3 px-8 rounded-md hover:bg-green-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center'
+            disabled={loading || !isFormValid}
           >
-            Submit Match(es)
+            {loading && <FaSpinner className='animate-spin mr-2' />}
+            {loading ? 'Submitting...' : 'Submit Match(es)'}
           </button>
         </div>
       </form>
