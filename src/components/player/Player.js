@@ -1,4 +1,5 @@
 import { faEdit } from '@fortawesome/free-solid-svg-icons';
+import AchievementsPanel from './AchievementsPanel';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   collection,
@@ -534,6 +535,7 @@ const Player = ({ onNameUpdate }) => {
       <h1 className='text-3xl font-outfit font-bold mb-6'>Player Profile</h1>
       <div className='bg-white shadow rounded-lg p-6 mb-8 relative'>
         <div className='flex flex-col sm:flex-row justify-between items-start'>
+          {/* Player Info Section */}
           <div className='w-full sm:w-1/2'>
             <div className='text-2xl font-outfit font-bold mb-4 text-gray-700'>
               <span>{player ? player.name : 'Player Name'}</span>
@@ -587,14 +589,13 @@ const Player = ({ onNameUpdate }) => {
                   {player.maxRating || player.rating}
                 </p>
                 <p className='text-gray-700'>
-                  <strong>Total Matches:</strong>{' '}
-                  {player.totalMatches ? player.totalMatches : 0}
+                  <strong>Total Matches:</strong> {player.totalMatches || 0}
                 </p>
                 <p className='text-gray-700'>
-                  <strong>Wins:</strong> {player.wins ? player.wins : 0}
+                  <strong>Wins:</strong> {player.wins || 0}
                 </p>
                 <p className='text-gray-700'>
-                  <strong>Losses:</strong> {player.losses ? player.losses : 0}
+                  <strong>Losses:</strong> {player.losses || 0}
                 </p>
                 <p className='text-gray-700'>
                   <strong>Win Rate:</strong>{' '}
@@ -611,6 +612,8 @@ const Player = ({ onNameUpdate }) => {
               </>
             )}
           </div>
+
+          {/* Rank Section */}
           <div className='w-full sm:w-1/2 flex justify-center sm:justify-end mt-6 sm:mt-0'>
             {rank && (
               <div
@@ -628,6 +631,16 @@ const Player = ({ onNameUpdate }) => {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Achievements Panel Section */}
+        <div className='mt-6'>
+          <AchievementsPanel
+            achievements={player?.achievements || []}
+            overallMatches={player?.totalMatches || 0}
+            overallWins={player?.wins || 0}
+            overallMaxStreak={maxWinStreak || 0}
+          />
         </div>
       </div>
       <h2 className='text-2xl font-outfit font-bold mb-4'>
