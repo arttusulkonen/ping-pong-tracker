@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { ReactNotifications } from 'react-notifications-component';
 import { Route, Routes } from 'react-router-dom';
 import Player from './components/player/Player';
+import PlayersTable from './components/PlayersTable';
 import ResetPassword from './components/registration/forgot-password';
 import Login from './components/registration/Login';
 import Register from './components/registration/Register';
@@ -76,6 +77,9 @@ function App() {
                 </div>
                 <div className='w-full'>
                   <RoomList rooms={rooms} loading={loading} />
+                </div>
+                <div className='w-full mt-8'>
+                  <PlayersTable />
                 </div>
               </div>
             }
