@@ -1,7 +1,12 @@
-// src/components/PlayersTable.js
-
-import { collection, doc, getDocs, updateDoc } from 'firebase/firestore';
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  updateDoc,
+} from 'firebase/firestore';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Tooltip } from 'react-tooltip';
 import 'react-tooltip/dist/react-tooltip.css';
 import { db } from '../firebase';
@@ -10,11 +15,44 @@ const PlayersTable = () => {
   const [players, setPlayers] = useState([]);
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedTab, setSelectedTab] = useState('all'); // 'all', '30', '7'
+  const [selectedTab, setSelectedTab] = useState('all'); // 'all', '30', '7', '90', '180', '365'
   const [sortConfig, setSortConfig] = useState({
     key: 'rank',
     direction: 'ascending',
   });
+
+  const timeFrames = [
+    {
+      label: 'All Time',
+      value: 'all',
+      tooltip: 'Includes all matches ever played by the player.',
+    },
+    {
+      label: 'Last 365 Days',
+      value: '365',
+      tooltip: 'Includes matches played in the last 365 days.',
+    },
+    {
+      label: 'Last 180 Days',
+      value: '180',
+      tooltip: 'Includes matches played in the last 180 days.',
+    },
+    {
+      label: 'Last 90 Days',
+      value: '90',
+      tooltip: 'Includes matches played in the last 90 days.',
+    },
+    {
+      label: 'Last 30 Days',
+      value: '30',
+      tooltip: 'Includes matches played in the last 30 days.',
+    },
+    {
+      label: 'Last 7 Days',
+      value: '7',
+      tooltip: 'Includes matches played in the last 7 days.',
+    },
+  ];
 
   // Fetch all players from Firestore
   const fetchPlayers = useCallback(async () => {
@@ -98,20 +136,13 @@ const PlayersTable = () => {
       let filteredMatches = [];
       const now = new Date();
 
-      if (timeFrame === '30') {
+      if (timeFrame !== 'all') {
         const pastDate = new Date();
-        pastDate.setDate(pastDate.getDate() - 30);
-        filteredMatches = matches.filter(
-          (match) => match.timestamp >= pastDate && match.timestamp <= now
-        );
-      } else if (timeFrame === '7') {
-        const pastDate = new Date();
-        pastDate.setDate(pastDate.getDate() - 7);
+        pastDate.setDate(pastDate.getDate() - parseInt(timeFrame, 10));
         filteredMatches = matches.filter(
           (match) => match.timestamp >= pastDate && match.timestamp <= now
         );
       } else {
-        // All time
         filteredMatches = matches;
       }
 
@@ -129,6 +160,7 @@ const PlayersTable = () => {
           longestWinStreak: 0,
           matches: [], // For calculating win streak
           finalScore: 0, // Final score
+          winRate: 0, // Win rate as a number
         };
       });
 
@@ -203,10 +235,17 @@ const PlayersTable = () => {
           playerStat.totalAddedPoints +
           longestWinStreak * 2;
 
+        // Calculate win rate
+        const winRate =
+          playerStat.matchesPlayed === 0
+            ? 0
+            : (playerStat.wins / playerStat.matchesPlayed) * 100;
+
         return {
           ...playerStat,
           longestWinStreak,
           finalScore: baseScore,
+          winRate, // Numeric win rate
         };
       });
 
@@ -260,7 +299,7 @@ const PlayersTable = () => {
       try {
         const userRef = doc(db, 'users', player.id);
         // Fetch existing achievements to prevent overwriting
-        const userSnap = await getDocs(userRef);
+        const userSnap = await getDoc(userRef);
         const existingAchievements = userSnap.exists()
           ? userSnap.data().achievements || []
           : [];
@@ -337,6 +376,15 @@ const PlayersTable = () => {
         }
 
         return a.name.localeCompare(b.name);
+      });
+    } else if (sortConfig.key === 'winRate') {
+      // Numeric sort for winRate
+      sortableItems.sort((a, b) => {
+        if (a.winRate < b.winRate)
+          return sortConfig.direction === 'ascending' ? -1 : 1;
+        if (a.winRate > b.winRate)
+          return sortConfig.direction === 'ascending' ? 1 : -1;
+        return 0;
       });
     } else {
       // Sort based on sortConfig.key and direction
@@ -482,14 +530,19 @@ const PlayersTable = () => {
             const winRate =
               player.matchesPlayed === 0
                 ? '0.00%'
-                : `${((player.wins / player.matchesPlayed) * 100).toFixed(2)}%`;
+                : `${player.winRate.toFixed(2)}%`;
             return (
               <tr key={player.id} className='hover:bg-gray-100'>
                 <td className='py-4 px-6 text-sm text-gray-700'>
                   {player.rank}
                 </td>
                 <td className='py-4 px-6 text-sm text-gray-700'>
-                  {player.name}
+                  <Link
+                    to={`/player/${player.id}`}
+                    className='text-blue-600 hover:underline'
+                  >
+                    {player.name}
+                  </Link>
                 </td>
                 <td className='py-4 px-6 text-sm text-gray-700'>
                   {player.matchesPlayed}
@@ -519,46 +572,23 @@ const PlayersTable = () => {
     <div className='container mx-auto px-4 py-8'>
       <h2 className='text-2xl font-bold mb-4'>Players Statistics</h2>
       {/* Tabs for selecting time frame with tooltips */}
-      <div className='flex space-x-4 mb-6'>
-        <button
-          onClick={() => setSelectedTab('all')}
-          className={`px-4 py-2 rounded ${
-            selectedTab === 'all'
-              ? 'bg-blue-500 text-white'
-              : 'bg-gray-200 text-gray-700'
-          }`}
-          data-tooltip-id='all-tooltip'
-          data-tooltip-html="<div class='tooltip-content p-2 text-base'>Includes all matches ever played by the player.</div>"
-        >
-          All Time
-          <Tooltip id='all-tooltip' />
-        </button>
-        <button
-          onClick={() => setSelectedTab('30')}
-          className={`px-4 py-2 rounded ${
-            selectedTab === '30'
-              ? 'bg-blue-500 text-white'
-              : 'bg-gray-200 text-gray-700'
-          }`}
-          data-tooltip-id='last30-tooltip'
-          data-tooltip-html="<div class='tooltip-content p-2 text-base'>Includes matches played in the last 30 days.</div>"
-        >
-          Last 30 Days
-          <Tooltip id='last30-tooltip' />
-        </button>
-        <button
-          onClick={() => setSelectedTab('7')}
-          className={`px-4 py-2 rounded ${
-            selectedTab === '7'
-              ? 'bg-blue-500 text-white'
-              : 'bg-gray-200 text-gray-700'
-          }`}
-          data-tooltip-id='last7-tooltip'
-          data-tooltip-html="<div class='tooltip-content p-2 text-base'>Includes matches played in the last 7 days.</div>"
-        >
-          Last 7 Days
-          <Tooltip id='last7-tooltip' />
-        </button>
+      <div className='flex space-x-4 mb-6 flex-wrap'>
+        {timeFrames.map((tab) => (
+          <button
+            key={tab.value}
+            onClick={() => setSelectedTab(tab.value)}
+            className={`px-4 py-2 rounded ${
+              selectedTab === tab.value
+                ? 'bg-blue-500 text-white'
+                : 'bg-gray-200 text-gray-700'
+            }`}
+            data-tooltip-id={`${tab.value}-tooltip`}
+            data-tooltip-html={tab.tooltip}
+          >
+            {tab.label}
+            <Tooltip id={`${tab.value}-tooltip`} />
+          </button>
+        ))}
       </div>
       {/* Tooltip component */}
       <Tooltip />
