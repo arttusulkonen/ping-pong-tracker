@@ -1,5 +1,5 @@
 import { updateProfile } from 'firebase/auth';
-import { doc, setDoc, getDocs, collection } from 'firebase/firestore';
+import { collection, doc, getDocs, setDoc } from 'firebase/firestore';
 import React, { useState } from 'react';
 import { Store } from 'react-notifications-component';
 import { Link, useNavigate } from 'react-router-dom';
@@ -14,6 +14,15 @@ const Register = () => {
   const [emailError, setEmailError] = useState(false);
   const [passwordError, setPasswordError] = useState(false);
   const [nameError, setNameError] = useState(false);
+
+  // Function to format date as "dd.mm.yyyy"
+  const getCurrentFormattedDate = () => {
+    const now = new Date();
+    const day = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, '0'); // Months are zero-based
+    const year = now.getFullYear();
+    return `${day}.${month}.${year}`;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -43,6 +52,9 @@ const Register = () => {
       );
       const user = userCredential.user;
 
+      // Generate the current date in "dd.mm.yyyy" format
+      const userRegistered = getCurrentFormattedDate();
+
       await updateProfile(user, {
         displayName: name,
       });
@@ -51,6 +63,7 @@ const Register = () => {
         email: user.email,
         name: name,
         rating: 1000,
+        registered: userRegistered,
       });
 
       Store.addNotification({

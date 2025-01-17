@@ -11,8 +11,8 @@ const Header = () => {
   useEffect(() => {
     if (user) {
       setPlayer({
-        id: user.uid,
-        name: user.displayName,
+        id: user?.uid,
+        name: user?.displayName,
       });
     }
   }, [user]);

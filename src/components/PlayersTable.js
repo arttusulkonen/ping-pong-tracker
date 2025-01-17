@@ -9,7 +9,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Tooltip } from 'react-tooltip';
 import 'react-tooltip/dist/react-tooltip.css';
-import { db } from '../firebase';
+import { auth, db } from '../firebase';
 
 const PlayersTable = () => {
   const [players, setPlayers] = useState([]);
@@ -57,15 +57,41 @@ const PlayersTable = () => {
   // Fetch all players from Firestore
   const fetchPlayers = useCallback(async () => {
     try {
+      // Получаем текущего пользователя
+      const currentUserRef = doc(db, 'users', auth.currentUser.uid);
+      const currentUserSnap = await getDoc(currentUserRef);
+      if (!currentUserSnap.exists()) {
+        console.error('Current user does not exist in Firestore');
+        setPlayers([]);
+        return;
+      }
+  
+      // Получаем комнаты текущего пользователя
+      const currentUserRooms = currentUserSnap.data().rooms || [];
+      if (currentUserRooms.length === 0) {
+        console.log('Current user is not in any rooms.');
+        setPlayers([]);
+        return;
+      }
+  
+      // Загружаем всех игроков
       const playersRef = collection(db, 'users');
       const playersSnap = await getDocs(playersRef);
-      const playersData = playersSnap.docs.map((docSnap) => ({
+      const allPlayers = playersSnap.docs.map((docSnap) => ({
         id: docSnap.id,
         ...docSnap.data(),
       }));
-      setPlayers(playersData);
+  
+      // Фильтруем игроков, которые состоят в одной комнате с текущим пользователем
+      const filteredPlayers = allPlayers.filter((player) => {
+        const playerRooms = player.rooms || [];
+        return playerRooms.some((room) => currentUserRooms.includes(room));
+      });
+  
+      setPlayers(filteredPlayers);
     } catch (error) {
       console.error('Error fetching players:', error);
+      setPlayers([]);
     }
   }, []);
 

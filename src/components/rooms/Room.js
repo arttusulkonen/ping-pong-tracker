@@ -314,7 +314,7 @@ const Room = () => {
                         className='form-checkbox h-5 w-5 text-blue-600 transition duration-150 ease-in-out mr-3'
                       />
                       <span className='text-sm font-medium'>
-                        {user.name} ({user.email})
+                        {user.name}
                       </span>
                     </div>
                   ))}

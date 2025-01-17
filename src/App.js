@@ -10,15 +10,15 @@ import Register from './components/registration/Register';
 import CreateRoom from './components/rooms/CreateRoom';
 import Room from './components/rooms/Room';
 import RoomList from './components/rooms/RoomList';
+import WelcomePage from './components/WelcomePage'; // Import the WelcomePage component
 import { auth, db } from './firebase';
 
 function App() {
   const [showModal, setShowModal] = useState(false);
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
-
   const [currentUser, setCurrentUser] = useState(null);
-
+  
   const handleOpenModal = () => {
     setShowModal(true);
   };
@@ -27,30 +27,24 @@ function App() {
     setShowModal(false);
   };
 
-  // get rooms from firestore
+  // Fetch rooms from Firestore
   const updateRoomList = async () => {
-    const querySnapshot = await getDocs(collection(db, 'rooms'));
-    let roomsData = querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-    setRooms(roomsData);
-    setLoading(false);
+    try {
+      const querySnapshot = await getDocs(collection(db, 'rooms'));
+      let roomsData = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setRooms(roomsData);
+    } catch (error) {
+      console.error("Error fetching rooms:", error);
+      // Optionally, add a notification for the error
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // const updatePlayerList = async () => {
-  //   const querySnapshot = await getDocs(collection(db, 'players'));
-  //   let playersData = querySnapshot.docs.map((doc) => ({
-  //     id: doc.id,
-  //     ...doc.data(),
-  //   }));
-  //   playersData.sort((a, b) => b.rating - a.rating);
-  //   setPlayers(playersData);
-  //   setLoading(false);
-  // };
-
   useEffect(() => {
-    // updatePlayerList();
     updateRoomList();
     const unsubscribe = auth.onAuthStateChanged((user) => {
       setCurrentUser(user);
@@ -66,22 +60,30 @@ function App() {
           <Route
             path='/'
             element={
-              <div className='flex flex-col items-center space-y-4'>
-                <div className='w-full p-4'>
-                  <CreateRoom
-                    showModal={showModal}
-                    handleOpenModal={handleOpenModal}
-                    handleCloseModal={handleCloseModal}
-                    currentUser={currentUser}
-                  />
+              currentUser ? (
+                <div className='flex flex-col items-center space-y-4'>
+                  <div className='w-full p-4'>
+                    <CreateRoom
+                      showModal={showModal}
+                      handleOpenModal={handleOpenModal}
+                      handleCloseModal={handleCloseModal}
+                      currentUser={currentUser}
+                    />
+                  </div>
+                  <div className='w-full'>
+                    <RoomList 
+                      rooms={rooms} 
+                      loading={loading} 
+                      currentUserId={currentUser?.uid}
+                    />
+                  </div>
+                  <div className='w-full mt-8'>
+                    <PlayersTable />
+                  </div>
                 </div>
-                <div className='w-full'>
-                  <RoomList rooms={rooms} loading={loading} />
-                </div>
-                <div className='w-full mt-8'>
-                  <PlayersTable />
-                </div>
-              </div>
+              ) : (
+                <WelcomePage />
+              )
             }
           />
           <Route path='/player/:userId' element={<Player />} />
