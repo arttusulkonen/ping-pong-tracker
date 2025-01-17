@@ -31,7 +31,7 @@ const Header = () => {
       <div className='flex items-center gap-4'>
         {user && (
           <Link to={`/player/${player.id}`} className='text-white'>
-            Hello, {user.displayName}
+            Hello, {user?.displayName}
           </Link>
         )}
         {user ? (
