@@ -1,17 +1,15 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# Dependencies
+/node_modules/
+/.pnp/
+/.pnp.js
 
-# dependencies
-/node_modules
-/.pnp
-.pnp.js
+# Testing
+/coverage/
 
-# testing
-/coverage
+# Production
+/build/
 
-# production
-/build
-
-# misc
+# Miscellaneous
 .DS_Store
 .env
 .env.local
@@ -19,10 +17,34 @@
 .env.test.local
 .env.production.local
 .firebaserc
+firebaserc
 firebase-debug.log
+firestore-debug.log
 ui-debug.log
 
-
+# Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Editor directories and files
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+
+# Firebase cache files
+.firebase/
+
+# Specific files
+public/favicon/code.txt
+
+# Fonts and assets (optional)
+# Uncomment the following line if you prefer to exclude fonts
+# /src/fonts/
