@@ -15,7 +15,7 @@ const PlayersTable = () => {
   const [players, setPlayers] = useState([]);
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedTab, setSelectedTab] = useState('all'); // 'all', '30', '7', '90', '180', '365'
+  const [selectedTab, setSelectedTab] = useState('all'); 
   const [sortConfig, setSortConfig] = useState({
     key: 'rank',
     direction: 'ascending',
@@ -54,10 +54,8 @@ const PlayersTable = () => {
     },
   ];
 
-  // Fetch all players from Firestore
   const fetchPlayers = useCallback(async () => {
     try {
-      // Получаем текущего пользователя
       const currentUserRef = doc(db, 'users', auth.currentUser.uid);
       const currentUserSnap = await getDoc(currentUserRef);
       if (!currentUserSnap.exists()) {
@@ -66,7 +64,6 @@ const PlayersTable = () => {
         return;
       }
   
-      // Получаем комнаты текущего пользователя
       const currentUserRooms = currentUserSnap.data().rooms || [];
       if (currentUserRooms.length === 0) {
         console.log('Current user is not in any rooms.');
@@ -74,7 +71,6 @@ const PlayersTable = () => {
         return;
       }
   
-      // Загружаем всех игроков
       const playersRef = collection(db, 'users');
       const playersSnap = await getDocs(playersRef);
       const allPlayers = playersSnap.docs.map((docSnap) => ({
@@ -82,7 +78,6 @@ const PlayersTable = () => {
         ...docSnap.data(),
       }));
   
-      // Фильтруем игроков, которые состоят в одной комнате с текущим пользователем
       const filteredPlayers = allPlayers.filter((player) => {
         const playerRooms = player.rooms || [];
         return playerRooms.some((room) => currentUserRooms.includes(room));
@@ -95,19 +90,16 @@ const PlayersTable = () => {
     }
   }, []);
 
-  // Fetch all matches from Firestore and parse timestamps
   const fetchMatches = useCallback(async () => {
     try {
       const matchesRef = collection(db, 'matches');
       const matchesSnap = await getDocs(matchesRef);
       const matchesData = matchesSnap.docs.map((docSnap) => {
         const data = docSnap.data();
-        const timestampStr = data.timestamp; // e.g., "01.10.2024 16.16.56" or "8.8.2024 16.57.28"
+        const timestampStr = data.timestamp; 
 
-        // Split into date and time
         const [datePart, timePart] = timestampStr.split(' ');
 
-        // Function to pad single-digit numbers with a leading zero
         const pad = (num) => (num.length === 1 ? `0${num}` : num);
 
         const [day, month, year] = datePart.split('.').map((part) => pad(part));
@@ -116,13 +108,12 @@ const PlayersTable = () => {
           .map((part) => pad(part));
 
         const dayNum = parseInt(day, 10);
-        const monthNum = parseInt(month, 10) - 1; // Months are zero-based in JavaScript
+        const monthNum = parseInt(month, 10) - 1; 
         const yearNum = parseInt(year, 10);
         const hourNum = parseInt(hour, 10);
         const minuteNum = parseInt(minute, 10);
         const secondNum = parseInt(second, 10);
 
-        // Create Date object
         const timestamp = new Date(
           yearNum,
           monthNum,
@@ -132,7 +123,6 @@ const PlayersTable = () => {
           secondNum
         );
 
-        // Check if the date is valid
         if (isNaN(timestamp.getTime())) {
           console.error(
             `Invalid Date object for match ID ${docSnap.id}: ${timestampStr}`
@@ -140,7 +130,7 @@ const PlayersTable = () => {
           return {
             id: docSnap.id,
             ...data,
-            timestamp: new Date(0), // Assign Epoch if invalid
+            timestamp: new Date(0),
           };
         }
 
@@ -156,7 +146,6 @@ const PlayersTable = () => {
     }
   }, []);
 
-  // Calculate statistics based on the selected time frame
   const calculateStatistics = useCallback(
     (timeFrame) => {
       let filteredMatches = [];
@@ -172,7 +161,6 @@ const PlayersTable = () => {
         filteredMatches = matches;
       }
 
-      // Initialize statistics for each player
       const statsByUser = {};
 
       players.forEach((player) => {
@@ -184,13 +172,12 @@ const PlayersTable = () => {
           losses: 0,
           totalAddedPoints: 0,
           longestWinStreak: 0,
-          matches: [], // For calculating win streak
-          finalScore: 0, // Final score
-          winRate: 0, // Win rate as a number
+          matches: [], 
+          finalScore: 0, 
+          winRate: 0, 
         };
       });
 
-      // Populate statistics based on matches
       filteredMatches.forEach((match) => {
         const { player1, player2, winner } = match;
         const p1Id = match.player1Id;
@@ -208,7 +195,6 @@ const PlayersTable = () => {
           statsByUser[p1Id].matches.push(match);
         }
 
-        // Player 2
         if (statsByUser[p2Id]) {
           statsByUser[p2Id].matchesPlayed += 1;
           if (winner === player2.name) {
@@ -221,7 +207,6 @@ const PlayersTable = () => {
         }
       });
 
-      // Function to compute the longest win streak
       const computeLongestWinStreak = (userMatches, userId, winnerName) => {
         const sortedMatches = [...userMatches].sort(
           (a, b) => a.timestamp - b.timestamp
@@ -247,7 +232,6 @@ const PlayersTable = () => {
         return maxStreak;
       };
 
-      // Calculate win streaks and final scores
       const playersStats = Object.values(statsByUser).map((playerStat) => {
         const longestWinStreak = computeLongestWinStreak(
           playerStat.matches,
@@ -255,13 +239,11 @@ const PlayersTable = () => {
           playerStat.name
         );
 
-        // Base score: (wins * 2) + totalAddedPoints + (longestWinStreak * 2)
         const baseScore =
           playerStat.wins * 2 +
           playerStat.totalAddedPoints +
           longestWinStreak * 2;
 
-        // Calculate win rate
         const winRate =
           playerStat.matchesPlayed === 0
             ? 0
@@ -271,11 +253,10 @@ const PlayersTable = () => {
           ...playerStat,
           longestWinStreak,
           finalScore: baseScore,
-          winRate, // Numeric win rate
+          winRate, 
         };
       });
 
-      // Calculate average number of matches played
       const totalMatches = playersStats.reduce(
         (acc, p) => acc + p.matchesPlayed,
         0
@@ -283,11 +264,10 @@ const PlayersTable = () => {
       const averageMatches =
         playersStats.length > 0 ? totalMatches / playersStats.length : 0;
 
-      // Apply a 10% penalty if matchesPlayed < averageMatches
       const finalPlayersStats = playersStats.map((p) => {
         let finalScore = p.finalScore;
         if (p.matchesPlayed < averageMatches) {
-          finalScore *= 0.9; // Apply 10% penalty
+          finalScore *= 0.9; 
         }
         return { ...p, finalScore };
       });
@@ -297,15 +277,13 @@ const PlayersTable = () => {
     [players, matches]
   );
 
-  // Assign achievements to top 3 players on the last day of the month
   const assignMonthlyAchievements = useCallback(async (currentStats) => {
     const today = new Date();
     const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
     if (today.getDate() !== lastDay.getDate()) {
-      return; // Not the last day of the month
+      return; 
     }
 
-    // Get top 3 players with at least one match
     const topPlayers = currentStats
       .filter((player) => player.matchesPlayed > 0)
       .slice(0, 3);
@@ -315,7 +293,7 @@ const PlayersTable = () => {
         type: 'monthlyFinish',
         dateFinished: today.toLocaleDateString('en-US'),
         place: player.rank,
-        roomId: 'N/A', // Customize if needed
+        roomId: 'N/A', 
         roomName: 'Monthly Competition',
         description: `Finished the month in ${
           player.rank === 1 ? 'first' : player.rank === 2 ? 'second' : 'third'
@@ -324,7 +302,6 @@ const PlayersTable = () => {
 
       try {
         const userRef = doc(db, 'users', player.id);
-        // Fetch existing achievements to prevent overwriting
         const userSnap = await getDoc(userRef);
         const existingAchievements = userSnap.exists()
           ? userSnap.data().achievements || []
@@ -342,7 +319,6 @@ const PlayersTable = () => {
     }
   }, []);
 
-  // Initialize data on component mount
   useEffect(() => {
     const initialize = async () => {
       await fetchPlayers();
@@ -352,27 +328,22 @@ const PlayersTable = () => {
     initialize();
   }, [fetchPlayers, fetchMatches]);
 
-  // Recalculate statistics and assign achievements when loading is complete or tab changes
   useEffect(() => {
     if (!loading) {
       const stats = calculateStatistics(selectedTab);
 
-      // Sort players by finalScore descending to assign ranks
       const sortedByScore = [...stats].sort(
         (a, b) => b.finalScore - a.finalScore
       );
 
-      // Assign ranks based on sorted order
       sortedByScore.forEach((player, index) => {
         player.rank = index + 1;
       });
 
-      // Assign monthly achievements
       assignMonthlyAchievements(sortedByScore);
     }
   }, [loading, selectedTab, calculateStatistics, assignMonthlyAchievements]);
 
-  // Handle sorting when a column header is clicked
   const handleSort = (key) => {
     let direction = 'ascending';
     if (sortConfig.key === key && sortConfig.direction === 'ascending') {
@@ -381,12 +352,10 @@ const PlayersTable = () => {
     setSortConfig({ key, direction });
   };
 
-  // Memoize sorted stats based on sortConfig
   const sortedStats = useMemo(() => {
     const sortableItems = [...calculateStatistics(selectedTab)];
 
     if (sortConfig.key === 'rank') {
-      // Custom sort to ensure players with matches are above those with zero matches
       sortableItems.sort((a, b) => {
         if (a.matchesPlayed > 0 && b.matchesPlayed === 0)
           return sortConfig.direction === 'ascending' ? -1 : 1;
@@ -404,7 +373,6 @@ const PlayersTable = () => {
         return a.name.localeCompare(b.name);
       });
     } else if (sortConfig.key === 'winRate') {
-      // Numeric sort for winRate
       sortableItems.sort((a, b) => {
         if (a.winRate < b.winRate)
           return sortConfig.direction === 'ascending' ? -1 : 1;
@@ -413,7 +381,6 @@ const PlayersTable = () => {
         return 0;
       });
     } else {
-      // Sort based on sortConfig.key and direction
       sortableItems.sort((a, b) => {
         if (a[sortConfig.key] < b[sortConfig.key])
           return sortConfig.direction === 'ascending' ? -1 : 1;
@@ -423,7 +390,6 @@ const PlayersTable = () => {
       });
     }
 
-    // Assign rank based on sorted order
     sortableItems.forEach((player, index) => {
       player.rank = index + 1;
     });
@@ -431,7 +397,6 @@ const PlayersTable = () => {
     return sortableItems;
   }, [calculateStatistics, selectedTab, sortConfig]);
 
-  // Function to render the table
   const renderTable = (stats) => {
     return (
       <table className='min-w-full bg-white shadow-md rounded-lg'>
@@ -597,7 +562,6 @@ const PlayersTable = () => {
   return (
     <div className='container mx-auto px-4 py-8'>
       <h2 className='text-2xl font-bold mb-4'>Players Statistics</h2>
-      {/* Tabs for selecting time frame with tooltips */}
       <div className='flex space-x-4 mb-6 flex-wrap'>
         {timeFrames.map((tab) => (
           <button
@@ -616,9 +580,7 @@ const PlayersTable = () => {
           </button>
         ))}
       </div>
-      {/* Tooltip component */}
       <Tooltip />
-      {/* Render the table */}
       <div className='overflow-x-auto'>{renderTable(sortedStats)}</div>
     </div>
   );

@@ -17,9 +17,7 @@ const UpdateMatches = () => {
 
       for (const matchDoc of matchesSnapshot.docs) {
         const matchData = matchDoc.data();
-        // Check if matchData has the old structure
         if (matchData.match && matchData.match.player1 && matchData.match.player2) {
-          // Create new structure
           const updatedMatchData = {
             player1Id: matchData.match.player1.id,
             player2Id: matchData.match.player2.id,
@@ -37,7 +35,6 @@ const UpdateMatches = () => {
             winner: matchData.match.winner,
           };
           const matchRef = doc(db, 'matches', matchDoc.id);
-          // Overwrite the document with the new structure
           await setDoc(matchRef, updatedMatchData, { merge: false });
           count += 1;
         }

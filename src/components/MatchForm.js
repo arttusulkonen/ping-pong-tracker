@@ -7,16 +7,16 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
-import { FaTrash, FaSpinner } from 'react-icons/fa'; // Importing the trash icon
+import { FaSpinner, FaTrash } from 'react-icons/fa'; // Importing the trash icon
 import { Store } from 'react-notifications-component';
 import { db } from '../firebase';
 
 const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
-  // State to store the list of players, selected player1, player2, and matches
-  const [players, setPlayers] = useState([]); // Holds the list of players
-  const [player1, setPlayer1] = useState(''); // Holds the selected player1's name
-  const [player2, setPlayer2] = useState(''); // Holds the selected player2's name
-  const [matches, setMatches] = useState([{ score1: '', score2: '' }]); // Holds the matches and their scores
+
+  const [players, setPlayers] = useState([]); 
+  const [player1, setPlayer1] = useState('');
+  const [player2, setPlayer2] = useState(''); 
+  const [matches, setMatches] = useState([{ score1: '', score2: '' }]); 
   const [loading, setLoading] = useState(false);
 
   const isFormValid =
@@ -29,7 +29,7 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
   const getFinnishFormattedDate = () => {
     const now = new Date();
     const day = String(now.getDate()).padStart(2, '0');
-    const month = String(now.getMonth() + 1).padStart(2, '0'); // months are 0-indexed
+    const month = String(now.getMonth() + 1).padStart(2, '0'); 
     const year = now.getFullYear();
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
@@ -67,13 +67,11 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
       const playerData = playerSnapshot.data();
       const adjustedRating = Math.round(newRating);
 
-      // Calculate new maxRating
       const newMaxRating = Math.max(
         playerData.maxRating || adjustedRating,
         adjustedRating
       );
 
-      // Update player data
       await updateDoc(playerRef, {
         rating: adjustedRating,
         maxRating: newMaxRating,

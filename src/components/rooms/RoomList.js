@@ -3,11 +3,10 @@ import { Link } from 'react-router-dom';
 
 const RoomList = ({ rooms, loading, currentUserId }) => {
 
-  // Function to parse the date string "dd.mm.yyyy" into a Date object
   const parseRoomCreated = (dateString) => {
     if (typeof dateString !== 'string') {
       console.warn(`Invalid date format: ${dateString}`);
-      return new Date(0); // Return the Unix epoch date
+      return new Date(0); 
     }
 
     try {
@@ -15,11 +14,10 @@ const RoomList = ({ rooms, loading, currentUserId }) => {
       return new Date(year, month - 1, day);
     } catch (error) {
       console.error("Error parsing date:", dateString, error);
-      return new Date(0); // Return the Unix epoch date in case of an error
+      return new Date(0);
     }
   };
 
-  // Memoize the filtered and sorted rooms to optimize performance
   const filteredRooms = useMemo(() => {
     return rooms
       .filter((room) =>
@@ -29,7 +27,7 @@ const RoomList = ({ rooms, loading, currentUserId }) => {
         ...room,
         createdAt: parseRoomCreated(room.roomCreated),
       }))
-      .sort((a, b) => b.createdAt - a.createdAt); // Sort from newest to oldest
+      .sort((a, b) => b.createdAt - a.createdAt); 
   }, [rooms, currentUserId]);
 
   return (

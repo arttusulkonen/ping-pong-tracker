@@ -1,7 +1,12 @@
 {
-  "name": "ping-pong-tournament",
-  "version": "0.1.0",
+  "name": "ping-pong-tracker",
+  "version": "1.0.0",
   "private": true,
+  "description": "A web application to track ping-pong games and manage statistics using ELO ratings.",
+  "main": "src/index.js",
+  "keywords": ["ping-pong", "elo", "tracker", "statistics", "react", "firebase"],
+  "author": "Arttu Sulkonen",
+  "license": "MIT",
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^6.6.0",
     "@fortawesome/free-solid-svg-icons": "^6.6.0",
@@ -25,10 +30,19 @@
     "react-tooltip": "^5.27.1",
     "web-vitals": "^2.1.4"
   },
+  "devDependencies": {
+    "tailwindcss": "^3.4.6",
+    "autoprefixer": "^10.4.13",
+    "postcss": "^8.4.21",
+    "eslint": "^8.46.0",
+    "eslint-plugin-react": "^7.33.0"
+  },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
+    "start": "react-scripts start", 
+    "build": "react-scripts build", 
     "test": "react-scripts test",
+    "lint": "eslint 'src/**/*.{js,jsx}'",
+    "format": "prettier --write 'src/**/*.{js,jsx,css,json}'",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
@@ -48,8 +62,5 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  },
-  "devDependencies": {
-    "tailwindcss": "^3.4.6"
   }
 }

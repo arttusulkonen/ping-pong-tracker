@@ -1,4 +1,4 @@
-import { collection, getDocs, query, where, deleteDoc, doc, updateDoc, getDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDoc, getDocs, query, updateDoc, where } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { db } from '../../firebase';
 
@@ -80,7 +80,6 @@ const LastMatches = ({ roomId, updateMatches }) => {
         rating: oldP2Rating,
         wins: p2Wins,
         losses: p2Losses,
-        // maxRating: p2Max < oldP2Rating ? oldP2Rating : p2Max
       });
 
       const roomRef = doc(db, 'rooms', roomId);

@@ -16,11 +16,10 @@ const AddRoomForm = ({ currentUser, onClose }) => {
   const [roomName, setRoomName] = useState('');
   const navigate = useNavigate();
 
-  // Function to format date as "dd.mm.yyyy"
   const getCurrentFormattedDate = () => {
     const now = new Date();
     const day = String(now.getDate()).padStart(2, '0');
-    const month = String(now.getMonth() + 1).padStart(2, '0'); // Months are zero-based
+    const month = String(now.getMonth() + 1).padStart(2, '0'); 
     const year = now.getFullYear();
     return `${day}.${month}.${year}`;
   };
@@ -43,7 +42,6 @@ const AddRoomForm = ({ currentUser, onClose }) => {
       return;
     }
 
-    // Get current user. We need this to assign the room to the user as a creator
     const user = currentUser;
 
     if (!user) {
@@ -64,27 +62,22 @@ const AddRoomForm = ({ currentUser, onClose }) => {
     }
 
     if (user) {
-      // Generate the current date in "dd.mm.yyyy" format
       const roomCreated = getCurrentFormattedDate();
 
-      // Create room object with roomCreated
       const roomData = {
         name: roomName,
         creator: user.uid,
         players: [],
         matches: [],
-        roomCreated, // Add the roomCreated field
+        roomCreated, 
       };
 
       try {
-        // Add room to database
         const roomRef = await addDoc(collection(db, 'rooms'), roomData);
 
-        // Get current user data
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         const userData = userDoc.exists() ? userDoc.data() : null;
 
-        // Create member object
         const memberData = {
           userId: user.uid,
           email: userData.email,
@@ -93,12 +86,10 @@ const AddRoomForm = ({ currentUser, onClose }) => {
           rating: 1000,
         };
 
-        // Adding current user to the list of members in the room
         await updateDoc(doc(db, 'rooms', roomRef.id), {
           members: arrayUnion(memberData),
         });
 
-        // Update user data with new room
         if (userDoc.exists()) {
           await updateDoc(doc(db, 'users', user.uid), {
             rooms: arrayUnion(roomRef.id),

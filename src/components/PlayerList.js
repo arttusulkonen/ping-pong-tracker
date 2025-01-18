@@ -1,8 +1,3 @@
-// PlayerList.js
-// This component displays two tables: a "regular" table with current ratings
-// and a "final" table with the last season summary (replacing the last entry in seasonHistory).
-// It also recalculates a "fair score" upon finishing the season, and updates achievements in user docs.
-
 import {
   collection,
   doc,
@@ -16,30 +11,23 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 import { Link } from 'react-router-dom';
 import { Tooltip } from 'react-tooltip';
-import 'react-tooltip/dist/react-tooltip.css'; // for react-tooltip
+import 'react-tooltip/dist/react-tooltip.css';
 import { db } from '../firebase';
 
 const PlayerList = ({ players, loading, userRole, roomId }) => {
-  // This array represents the initial "members" from props (roomData.members).
   const [members, setMembers] = useState([]);
-  // This is the updated stats (wins, losses, rating) after fetching matches.
   const [updatedStats, setUpdatedStats] = useState({});
-  // This controls whether we apply the "fair ranking" filter or not.
   const [isFiltered, setIsFiltered] = useState(false);
 
-  // Controls which table to display: 'regular' or 'final'.
   const [viewMode, setViewMode] = useState('regular');
 
-  // We store the current seasonHistory from the room doc, to display final results.
   const [seasonHistory, setSeasonHistory] = useState([]);
 
-  // Sorting config for the regular table
   const [sortConfig, setSortConfig] = useState({
     key: 'rating',
     direction: 'descending',
   });
 
-  // finishSeason recalculates stats, overwrites the last entry in seasonHistory, and updates achievements.
   const finishSeason = async () => {
     try {
       const roomRef = doc(db, 'rooms', roomId);
@@ -50,35 +38,34 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
       }
       const roomData = roomSnap.data();
 
-      // Fetch all matches for this room
       const matchesRef = collection(db, 'matches');
       const qMatches = query(matchesRef, where('roomId', '==', roomId));
       const matchesSnap = await getDocs(qMatches);
       const matches = matchesSnap.docs.map((docSnap) => docSnap.data());
-      if (matches.length === 0) {
+      if (matches?.length === 0) {
         console.warn('No matches found. Finishing season anyway...');
       }
 
-      // We'll create a dictionary of userId -> stats
       const statsByUser = {};
 
-      // Helper to compute the longest win streak by sorting matches by date
       function computeLongestWinStreak(userId, userMatches) {
-        const sorted = [...userMatches].sort((a, b) => {
-          const [dA, mA, yA, hA, minA, sA] = a.timestamp.split(/[\s.:]/);
-          const [dB, mB, yB, hB, minB, sB] = b.timestamp.split(/[\s.:]/);
+        const sorted = [...userMatches]?.sort((a, b) => {
+          const [dA, mA, yA, hA, minA, sA] =
+            a?.timestamp?.split(/[\s.:]/) || [];
+          const [dB, mB, yB, hB, minB, sB] =
+            b?.timestamp?.split(/[\s.:]/) || [];
           const dateA = new Date(+yA, mA - 1, +dA, +hA, +minA, +sA);
           const dateB = new Date(+yB, mB - 1, +dB, +hB, +minB, +sB);
           return dateA - dateB;
         });
         let maxStreak = 0;
         let currentStreak = 0;
-        for (const match of sorted) {
+        for (const match of sorted || []) {
           const isWinner =
-            match.winner ===
-            (match.player1Id === userId
-              ? match.player1.name
-              : match.player2.name);
+            match?.winner ===
+            (match?.player1Id === userId
+              ? match?.player1?.name
+              : match?.player2?.name);
           if (isWinner) {
             currentStreak++;
             if (currentStreak > maxStreak) maxStreak = currentStreak;
@@ -89,16 +76,15 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
         return maxStreak;
       }
 
-      // Build stats from all matches
-      for (const match of matches) {
-        const { player1, player2, winner } = match;
-        const p1Id = match.player1Id;
-        const p2Id = match.player2Id;
+      for (const match of matches || []) {
+        const { player1, player2, winner } = match || {};
+        const p1Id = match?.player1Id;
+        const p2Id = match?.player2Id;
 
         if (!statsByUser[p1Id]) {
           statsByUser[p1Id] = {
             userId: p1Id,
-            name: player1.name,
+            name: player1?.name || 'Unknown',
             wins: 0,
             losses: 0,
             totalAddedPoints: 0,
@@ -108,7 +94,7 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
         if (!statsByUser[p2Id]) {
           statsByUser[p2Id] = {
             userId: p2Id,
-            name: player2.name,
+            name: player2?.name || 'Unknown',
             wins: 0,
             losses: 0,
             totalAddedPoints: 0,
@@ -116,74 +102,70 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
           };
         }
 
-        if (winner === player1.name) {
+        if (winner === player1?.name) {
           statsByUser[p1Id].wins++;
           statsByUser[p2Id].losses++;
-        } else if (winner === player2.name) {
+        } else if (winner === player2?.name) {
           statsByUser[p2Id].wins++;
           statsByUser[p1Id].losses++;
         }
 
-        statsByUser[p1Id].totalAddedPoints += player1.addedPoints ?? 0;
-        statsByUser[p2Id].totalAddedPoints += player2.addedPoints ?? 0;
-        statsByUser[p1Id].matches.push(match);
-        statsByUser[p2Id].matches.push(match);
+        statsByUser[p1Id].totalAddedPoints += player1?.addedPoints ?? 0;
+        statsByUser[p2Id].totalAddedPoints += player2?.addedPoints ?? 0;
+        statsByUser[p1Id].matches?.push(match);
+        statsByUser[p2Id].matches?.push(match);
       }
 
-      // Convert dictionary to array
       let playersStats = Object.values(statsByUser).map((p) => {
-        const matchesPlayed = p.wins + p.losses;
+        const matchesPlayed = (p?.wins || 0) + (p?.losses || 0);
         return { ...p, matchesPlayed };
       });
 
-      // Compute longestWinStreak
-      for (const p of playersStats) {
-        p.longestWinStreak = computeLongestWinStreak(p.userId, p.matches);
+      for (const p of playersStats || []) {
+        p.longestWinStreak = computeLongestWinStreak(p?.userId, p?.matches);
       }
 
-      // Fair Ranking: baseScore = (wins*2) + totalAddedPoints + (longestWinStreak*2)
-      // If matchesPlayed < average, we apply a 10% penalty
-      const sumMatches = playersStats.reduce(
-        (acc, p) => acc + p.matchesPlayed,
-        0
-      );
+      const sumMatches =
+        playersStats?.reduce((acc, p) => acc + (p?.matchesPlayed || 0), 0) || 0;
       const averageMatches =
-        playersStats.length > 0 ? sumMatches / playersStats.length : 0;
+        playersStats?.length > 0 ? sumMatches / playersStats.length : 0;
 
-      playersStats = playersStats.map((p) => {
-        const baseScore =
-          p.wins * 2 + p.totalAddedPoints + p.longestWinStreak * 2;
-        let finalScore = baseScore;
-        if (p.matchesPlayed < averageMatches) {
-          finalScore *= 0.9;
-        }
-        return { ...p, finalScore };
-      });
+      playersStats =
+        playersStats?.map((p) => {
+          const baseScore =
+            (p?.wins || 0) * 2 +
+            (p?.totalAddedPoints || 0) +
+            (p?.longestWinStreak || 0) * 2;
+          let finalScore = baseScore;
+          if ((p?.matchesPlayed || 0) < averageMatches) {
+            finalScore *= 0.9;
+          }
+          return { ...p, finalScore };
+        }) || [];
 
-      // Sort descending by finalScore
-      playersStats.sort((a, b) => b.finalScore - a.finalScore);
+      playersStats.sort((a, b) => (b?.finalScore || 0) - (a?.finalScore || 0));
 
-      // Assign place = i+1
       playersStats.forEach((p, i) => {
         p.place = i + 1;
       });
 
-      const now = new Date().toLocaleString('fi-FI');
-      const seasonResult = playersStats.map((p) => ({
-        userId: p.userId,
-        name: p.name,
-        place: p.place,
-        matchesPlayed: p.matchesPlayed,
-        wins: p.wins,
-        losses: p.losses,
-        totalAddedPoints: p.totalAddedPoints,
-        longestWinStreak: p.longestWinStreak,
-        finalScore: p.finalScore,
-      }));
+      const now = new Date()?.toLocaleString('fi-FI') || '';
+      const seasonResult =
+        playersStats?.map((p) => ({
+          userId: p?.userId,
+          name: p?.name,
+          place: p?.place,
+          matchesPlayed: p?.matchesPlayed,
+          wins: p?.wins,
+          losses: p?.losses,
+          totalAddedPoints: p?.totalAddedPoints,
+          longestWinStreak: p?.longestWinStreak,
+          finalScore: p?.finalScore,
+        })) || [];
 
-      let seasonHistory = roomData.seasonHistory || [];
-      if (!Array.isArray(seasonHistory)) {
-        seasonHistory = [];
+      let currentSeasonHistory = roomData?.seasonHistory || [];
+      if (!Array.isArray(currentSeasonHistory)) {
+        currentSeasonHistory = [];
       }
 
       const newHistoryEntry = {
@@ -191,61 +173,55 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
         summary: seasonResult,
       };
 
-      // Overwrite the last entry in seasonHistory (or push if none)
-      if (seasonHistory.length > 0) {
-        seasonHistory[seasonHistory.length - 1] = newHistoryEntry;
+      if (currentSeasonHistory?.length > 0) {
+        currentSeasonHistory[currentSeasonHistory.length - 1] = newHistoryEntry;
       } else {
-        seasonHistory.push(newHistoryEntry);
+        currentSeasonHistory?.push(newHistoryEntry);
       }
 
-      // Update room doc
       await updateDoc(roomRef, {
-        seasonHistory,
+        seasonHistory: currentSeasonHistory,
       });
 
-      // Update achievements in user docs
-      for (const p of playersStats) {
-        const userRef = doc(db, 'users', p.userId);
+      for (const p of playersStats || []) {
+        const userRef = doc(db, 'users', p?.userId);
         const userSnap = await getDoc(userRef);
         if (!userSnap.exists()) {
-          console.warn(`User ${p.userId} not found!`);
+          console.warn(`User ${p?.userId} not found!`);
           continue;
         }
         const userData = userSnap.data();
-        const achievements = Array.isArray(userData.achievements)
-          ? userData.achievements
+        const achievements = Array.isArray(userData?.achievements)
+          ? userData?.achievements
           : [];
 
         const safeNumber = (val) => (typeof val === 'number' ? val : 0);
 
-        // We'll use p.place here, which is already i+1 above
         const newAchievement = {
           type: 'seasonFinish',
           roomId,
-          roomName: roomData.name || 'Unknown Room',
+          roomName: roomData?.name || 'Unknown Room',
           dateFinished: now,
-          place: safeNumber(p.place),
-          matchesPlayed: safeNumber(p.matchesPlayed),
-          wins: safeNumber(p.wins),
-          losses: safeNumber(p.losses),
-          totalAddedPoints: safeNumber(p.totalAddedPoints),
-          longestWinStreak: safeNumber(p.longestWinStreak),
-          finalScore: safeNumber(p.finalScore),
+          place: safeNumber(p?.place),
+          matchesPlayed: safeNumber(p?.matchesPlayed),
+          wins: safeNumber(p?.wins),
+          losses: safeNumber(p?.losses),
+          totalAddedPoints: safeNumber(p?.totalAddedPoints),
+          longestWinStreak: safeNumber(p?.longestWinStreak),
+          finalScore: safeNumber(p?.finalScore),
         };
 
-        achievements.push(newAchievement);
+        achievements?.push(newAchievement);
         await updateDoc(userRef, { achievements });
       }
 
       alert('Season finished! Achievements granted.');
       setViewMode('final');
-    } catch (err) {
-      console.error('Error finishing season:', err);
-      alert('Error finishing season. Check console for details.');
+    } catch (error) {
+      console.error('Error finishing season:', error);
     }
   };
 
-  // This fetches matches, updates stats, and also pulls the existing seasonHistory for final table
   const calculateStatsForRoom = useCallback(
     async (roomId) => {
       try {
@@ -257,98 +233,95 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
 
         const playerStats = {};
 
-        matchesSnapshot.forEach((doc) => {
-          const match = doc.data();
-          const { player1, player2, winner } = match;
+        matchesSnapshot?.forEach((doc) => {
+          const match = doc?.data();
+          const { player1, player2, winner } = match || {};
 
-          const p1Member = members.find((m) => m.userId === match.player1Id);
-          const p2Member = members.find((m) => m.userId === match.player2Id);
+          const p1Member = members?.find((m) => m?.userId === match?.player1Id);
+          const p2Member = members?.find((m) => m?.userId === match?.player2Id);
+
           if (!p1Member || !p2Member) {
             console.warn(
               'Member not found for',
-              match.player1Id,
-              match.player2Id
+              match?.player1Id,
+              match?.player2Id
             );
             return;
           }
 
-          if (!playerStats[match.player1Id]) {
-            playerStats[match.player1Id] = {
-              name: player1.name,
+          if (!playerStats[match?.player1Id]) {
+            playerStats[match?.player1Id] = {
+              name: player1?.name || 'Unknown',
               wins: 0,
               losses: 0,
               rating: 1000,
             };
           }
-          if (!playerStats[match.player2Id]) {
-            playerStats[match.player2Id] = {
-              name: player2.name,
+          if (!playerStats[match?.player2Id]) {
+            playerStats[match?.player2Id] = {
+              name: player2?.name || 'Unknown',
               wins: 0,
               losses: 0,
               rating: 1000,
             };
           }
 
-          playerStats[match.player1Id].rating += player1.addedPoints ?? 0;
-          if (winner === player1.name) {
-            playerStats[match.player1Id].wins++;
+          playerStats[match?.player1Id].rating += player1?.addedPoints ?? 0;
+          if (winner === player1?.name) {
+            playerStats[match?.player1Id].wins++;
           } else {
-            playerStats[match.player1Id].losses++;
+            playerStats[match?.player1Id].losses++;
           }
 
-          playerStats[match.player2Id].rating += player2.addedPoints ?? 0;
-          if (winner === player2.name) {
-            playerStats[match.player2Id].wins++;
+          playerStats[match?.player2Id].rating += player2?.addedPoints ?? 0;
+          if (winner === player2?.name) {
+            playerStats[match?.player2Id].wins++;
           } else {
-            playerStats[match.player2Id].losses++;
+            playerStats[match?.player2Id].losses++;
           }
         });
 
-        // Update updatedStats in state
-        const updated = members.map((m) => {
-          const s = playerStats[m.userId] || {
-            wins: 0,
-            losses: 0,
-            rating: 1000,
-          };
-          return {
-            ...m,
-            wins: s.wins,
-            losses: s.losses,
-            rating: s.rating,
-          };
-        });
+        const updated =
+          members?.map((m) => {
+            const s = playerStats[m?.userId] || {
+              wins: 0,
+              losses: 0,
+              rating: 1000,
+            };
+            return {
+              ...m,
+              wins: s?.wins || 0,
+              losses: s?.losses || 0,
+              rating: s?.rating || 1000,
+            };
+          }) || [];
         setUpdatedStats(updated);
 
-        // Also load seasonHistory from the room doc
         const roomSnap = await getDoc(doc(db, 'rooms', roomId));
         if (roomSnap.exists()) {
-          const data = roomSnap.data();
-          const history = data.seasonHistory || [];
+          const data = roomSnap?.data();
+          const history = data?.seasonHistory || [];
           if (Array.isArray(history)) {
             setSeasonHistory(history);
           } else {
             setSeasonHistory([]);
           }
-
-          // If there's already a last entry, we can decide to start in "final" mode
-          // Example:
-          // if (history.length > 0) setViewMode('final'); // If you want to default to final if there's already a record
         }
       } catch (error) {
         console.error('Error in calculateStatsForRoom:', error);
       }
     },
-    [members]
+    [members] 
   );
-
-  // On mount or whenever players / roomId change, fetch stats
   useEffect(() => {
-    setMembers(players);
-    if (roomId) {
+    setMembers(players || []);
+  }, [players]);
+
+  useEffect(() => {
+    if (roomId && members.length > 0) {
       calculateStatsForRoom(roomId);
     }
-  }, [players, roomId, calculateStatsForRoom]);
+  }, [roomId, members, calculateStatsForRoom]);
 
   const getRankUrl = (maxRating) => {
     const rankUrls = [
@@ -380,28 +353,26 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
 
   const getCachedImageUrl = (userId, maxRating) => {
     const cacheKey = `imageUrl-${userId}-${maxRating}`;
-    const cachedUrl = localStorage.getItem(cacheKey);
+    const cachedUrl = localStorage?.getItem(cacheKey);
 
     if (cachedUrl) {
       return cachedUrl;
     } else {
       const newUrl = getRankUrl(maxRating);
-      localStorage.setItem(cacheKey, newUrl);
+      localStorage?.setItem(cacheKey, newUrl);
       return newUrl;
     }
   };
 
-  // Explanation for "Hidden rank"
   const getHiddenRankExplanations = () => {
     return `
-      <div class="tooltip-content p-2 text-base font-outfit">
-        <p>Hidden if the player has played less than 5 matches.</p>
-        <p>Your rating will be revealed when you have played more than 5 matches.</p>
-      </div>
-    `;
+        <div class="tooltip-content p-2 text-base font-outfit">
+          <p>Hidden if the player has played less than 5 matches.</p>
+          <p>Your rating will be revealed when you have played more than 5 matches.</p>
+        </div>
+      `;
   };
 
-  // This function updates the members in the room doc with the current stats
   const updateRoomMembers = async () => {
     try {
       const roomRef = doc(db, 'rooms', roomId);
@@ -410,13 +381,15 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
         console.error(`Room with ID ${roomId} not found.`);
         return;
       }
-      const roomData = snap.data();
-      const updatedMembersList = updatedStats.map((player) => ({
-        ...roomData.members.find((m) => m.userId === player.userId),
-        wins: player.wins,
-        losses: player.losses,
-        rating: player.rating,
-      }));
+      const roomData = snap?.data();
+      const updatedMembersList =
+        updatedStats?.map((player) => ({
+          ...(roomData?.members?.find((m) => m?.userId === player?.userId) ||
+            {}),
+          wins: player?.wins || 0,
+          losses: player?.losses || 0,
+          rating: player?.rating || 1000,
+        })) || [];
       await updateDoc(roomRef, { members: updatedMembersList });
       console.log('Room data updated successfully.');
     } catch (error) {
@@ -424,9 +397,8 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
     }
   };
 
-  // Deleting a player from the room
   const deletePlayerConfirmationModal = (userId) => {
-    if (window.confirm('Are you sure you want to delete this player?')) {
+    if (window?.confirm('Are you sure you want to delete this player?')) {
       deletePlayer(userId);
     }
   };
@@ -434,9 +406,9 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
   const deletePlayer = async (userId) => {
     try {
       const roomSnap = await getDoc(doc(db, 'rooms', roomId));
-      if (!roomSnap.exists()) return;
-      const data = roomSnap.data();
-      const filtered = data.members.filter((m) => m.userId !== userId);
+      if (!roomSnap?.exists()) return;
+      const data = roomSnap?.data();
+      const filtered = data?.members?.filter((m) => m?.userId !== userId) || [];
       await updateDoc(doc(db, 'rooms', roomId), { members: filtered });
       setMembers(filtered);
     } catch (error) {
@@ -444,25 +416,22 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
     }
   };
 
-  // Win percentage helper
   const calculateWinPercentage = (wins, losses) => {
-    const totalMatches = wins + losses;
+    const totalMatches = (wins || 0) + (losses || 0);
     return totalMatches === 0 ? 0 : ((wins / totalMatches) * 100).toFixed(2);
   };
 
-  // Sorting handler for the "regular" table
   const handleSort = (key) => {
     let direction = 'ascending';
-    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+    if (sortConfig?.key === key && sortConfig?.direction === 'ascending') {
       direction = 'descending';
     }
     setSortConfig({ key, direction });
   };
 
-  // Build the "regular" table data
-  const sortedPlayers = [...members]
+  const sortedPlayers = [...(members || [])]
     .map((player) => {
-      const totalMatches = (player.wins || 0) + (player.losses || 0);
+      const totalMatches = (player?.wins || 0) + (player?.losses || 0);
       return {
         ...player,
         totalMatches,
@@ -470,47 +439,55 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
         winPercentage:
           totalMatches === 0
             ? 0
-            : ((player.wins / totalMatches) * 100).toFixed(2),
+            : (((player?.wins || 0) / totalMatches) * 100).toFixed(2),
       };
     })
     .sort((a, b) => {
-      if (a.ratingVisible === b.ratingVisible) {
-        // Sort by key
-        if (sortConfig.direction === 'ascending') {
-          return a[sortConfig.key] > b[sortConfig.key] ? 1 : -1;
+      if (a?.ratingVisible === b?.ratingVisible) {
+        if (sortConfig?.direction === 'ascending') {
+          return a?.[sortConfig?.key] > b?.[sortConfig?.key] ? 1 : -1;
         } else {
-          return a[sortConfig.key] < b[sortConfig.key] ? 1 : -1;
+          return a?.[sortConfig?.key] < b?.[sortConfig?.key] ? 1 : -1;
         }
       }
-      // ratingVisible players first
-      return a.ratingVisible ? -1 : 1;
+      return a?.ratingVisible ? -1 : 1;
     });
 
-  // Final table from the last entry in seasonHistory
-  const latestHistory = seasonHistory[seasonHistory.length - 1] || null;
+  const latestHistory = seasonHistory?.[seasonHistory?.length - 1] || null;
   const finalTable = latestHistory
-    ? [...latestHistory.summary].sort((a, b) => a.place - b.place)
+    ? [...(latestHistory?.summary || [])]?.sort(
+        (a, b) => (a?.place || 0) - (b?.place || 0)
+      )
     : [];
 
-  // Toggle to apply or remove "fair ranking" filter in the regular table
   const toggleFilter = () => {
     setIsFiltered((prev) => !prev);
   };
 
   const averageMatches =
-    sortedPlayers.reduce((acc, player) => acc + player.totalMatches, 0) /
-    sortedPlayers.length;
+    sortedPlayers?.length > 0
+      ? sortedPlayers?.reduce(
+          (acc, player) => acc + (player?.totalMatches || 0),
+          0
+        ) / sortedPlayers?.length
+      : 0;
 
-  // If isFiltered, we reorder players with >= averageMatches first.
   const displayedPlayers = isFiltered
-    ? sortedPlayers
-        .filter((p) => p.totalMatches >= averageMatches)
-        .concat(sortedPlayers.filter((p) => p.totalMatches < averageMatches))
+    ? [
+        ...(sortedPlayers?.filter(
+          (p) => (p?.totalMatches || 0) >= averageMatches
+        ) || []),
+        ...(sortedPlayers?.filter(
+          (p) => (p?.totalMatches || 0) < averageMatches
+        ) || []),
+      ]
     : sortedPlayers;
 
   return (
-     <div className='flex flex-col'  style={{ zIndex: 999, position: 'relative' }}>
-      {/* View mode toggle buttons */}
+    <div
+      className='flex flex-col'
+      style={{ zIndex: 999, position: 'relative' }}
+    >
       <div className='mb-4 flex space-x-2'>
         <button
           onClick={() => setViewMode('regular')}
@@ -563,8 +540,8 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
                         className='cursor-pointer px-6 py-3 bg-gray-200 text-left text-xs font-medium text-gray-700 uppercase tracking-wider'
                       >
                         Name{' '}
-                        {sortConfig.key === 'name'
-                          ? sortConfig.direction === 'ascending'
+                        {sortConfig?.key === 'name'
+                          ? sortConfig?.direction === 'ascending'
                             ? '↑'
                             : '↓'
                           : '↕'}
@@ -576,8 +553,8 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
                         data-tooltip-html="<div class='tooltip-content p-2 text-base'>This is the player's current rating, summing up all addedPoints from matches.</div>"
                       >
                         Points{' '}
-                        {sortConfig.key === 'rating'
-                          ? sortConfig.direction === 'ascending'
+                        {sortConfig?.key === 'rating'
+                          ? sortConfig?.direction === 'ascending'
                             ? '↑'
                             : '↓'
                           : '↕'}
@@ -588,8 +565,8 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
                         className='cursor-pointer px-6 py-3 bg-gray-200 text-left text-xs font-medium text-gray-700 uppercase tracking-wider'
                       >
                         Matches Played{' '}
-                        {sortConfig.key === 'totalMatches'
-                          ? sortConfig.direction === 'ascending'
+                        {sortConfig?.key === 'totalMatches'
+                          ? sortConfig?.direction === 'ascending'
                             ? '↑'
                             : '↓'
                           : '↕'}
@@ -599,8 +576,8 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
                         className='cursor-pointer px-6 py-3 bg-gray-200 text-left text-xs font-medium text-gray-700 uppercase tracking-wider'
                       >
                         Wins %{' '}
-                        {sortConfig.key === 'winPercentage'
-                          ? sortConfig.direction === 'ascending'
+                        {sortConfig?.key === 'winPercentage'
+                          ? sortConfig?.direction === 'ascending'
                             ? '↑'
                             : '↓'
                           : '↕'}
@@ -625,7 +602,7 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
                           </td>
                         </tr>
                       ))
-                    ) : displayedPlayers.length === 0 ? (
+                    ) : displayedPlayers?.length === 0 ? (
                       <tr>
                         <td
                           colSpan={4}
@@ -635,23 +612,23 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
                         </td>
                       </tr>
                     ) : (
-                      displayedPlayers.map((player) => {
+                      displayedPlayers?.map((player) => {
                         const totalMatches =
-                          (player.wins || 0) + (player.losses || 0);
+                          (player?.wins || 0) + (player?.losses || 0);
                         return (
                           <tr
-                            key={player.userId}
+                            key={player?.userId}
                             className='hover:bg-gray-50 transition duration-200 ease-in-out'
                           >
                             <td className='py-4 px-6 text-sm font-medium text-gray-900 whitespace-nowrap'>
                               <div className='flex items-center space-x-3'>
-                                {player.ratingVisible ? (
+                                {player?.ratingVisible ? (
                                   <LazyLoadImage
                                     src={getCachedImageUrl(
-                                      player.userId,
-                                      player.maxRating
+                                      player?.userId,
+                                      player?.maxRating
                                     )}
-                                    alt={player.name}
+                                    alt={player?.name}
                                     className='h-8 w-8 mr-2'
                                     effect='opacity'
                                     placeholderSrc='https://bekindcult.fi/wp-content/uploads/2024/10/unknown-1.webp'
@@ -659,22 +636,22 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
                                 ) : (
                                   <LazyLoadImage
                                     src='https://bekindcult.fi/wp-content/uploads/2024/10/unknown-1.webp'
-                                    alt={player.name}
+                                    alt={player?.name}
                                     className='h-8 w-8 mr-2'
                                     effect='opacity'
                                   />
                                 )}
                                 <Link
-                                  to={`/player/${player.userId}`}
+                                  to={`/player/${player?.userId}`}
                                   className='text-lg font-semibold hover:text-blue-600 transition duration-200'
                                 >
-                                  {player.name}
+                                  {player?.name}
                                 </Link>
                               </div>
                             </td>
                             <td className='py-4 px-6 text-sm text-gray-900 whitespace-nowrap'>
-                              {player.ratingVisible ? (
-                                <span>{player.rating}</span>
+                              {player?.ratingVisible ? (
+                                <span>{player?.rating}</span>
                               ) : (
                                 <span
                                   data-tooltip-id='rank-tooltip'
@@ -689,11 +666,11 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
                               {totalMatches}
                             </td>
                             <td className='py-4 px-6 text-sm text-gray-900 whitespace-nowrap'>
-                              {player.ratingVisible ? (
+                              {player?.ratingVisible ? (
                                 <span>
                                   {calculateWinPercentage(
-                                    player.wins,
-                                    player.losses
+                                    player?.wins,
+                                    player?.losses
                                   )}
                                   %
                                 </span>
@@ -706,7 +683,9 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
                               <td className='py-4 px-6 flex justify-end text-sm font-medium whitespace-nowrap'>
                                 <button
                                   onClick={() =>
-                                    deletePlayerConfirmationModal(player.userId)
+                                    deletePlayerConfirmationModal(
+                                      player?.userId
+                                    )
                                   }
                                   className='flex items-center justify-end bg-gray-100 text-gray-800 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 transition duration-200 ease-in-out rounded px-2 py-1'
                                 >
@@ -765,7 +744,7 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
       {viewMode === 'final' && (
         <div className='bg-white shadow rounded p-4 text-black'>
           <h2 className='text-xl font-bold mb-4'>Final Season Results</h2>
-          {finalTable.length === 0 ? (
+          {finalTable?.length === 0 ? (
             <p>No final results yet.</p>
           ) : (
             <table className='min-w-full bg-white shadow text-black'>
@@ -803,16 +782,18 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
                 </tr>
               </thead>
               <tbody className='divide-y divide-gray-200'>
-                {finalTable.map((p) => (
-                  <tr key={p.userId}>
-                    <td className='py-3 px-6'>{p.place}</td>
-                    <td className='py-3 px-6'>{p.name}</td>
-                    <td className='py-3 px-6'>{p.matchesPlayed}</td>
-                    <td className='py-3 px-6'>{p.wins}</td>
-                    <td className='py-3 px-6'>{p.losses}</td>
-                    <td className='py-3 px-6'>{p.longestWinStreak}</td>
-                    <td className='py-3 px-6'>{p.totalAddedPoints.toFixed(2)}</td>
-                    <td className='py-3 px-6'>{p.finalScore.toFixed(2)}</td>
+                {finalTable?.map((p) => (
+                  <tr key={p?.userId}>
+                    <td className='py-3 px-6'>{p?.place}</td>
+                    <td className='py-3 px-6'>{p?.name}</td>
+                    <td className='py-3 px-6'>{p?.matchesPlayed}</td>
+                    <td className='py-3 px-6'>{p?.wins}</td>
+                    <td className='py-3 px-6'>{p?.losses}</td>
+                    <td className='py-3 px-6'>{p?.longestWinStreak}</td>
+                    <td className='py-3 px-6'>
+                      {p?.totalAddedPoints?.toFixed(2)}
+                    </td>
+                    <td className='py-3 px-6'>{p?.finalScore?.toFixed(2)}</td>
                   </tr>
                 ))}
               </tbody>

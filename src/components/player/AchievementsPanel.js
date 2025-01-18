@@ -1,26 +1,17 @@
-// AchievementsPanel.jsx
 import React from 'react';
 import { Tooltip } from 'react-tooltip';
 import 'react-tooltip/dist/react-tooltip.css';
 
-// React Icons
-import { FaMedal, FaLock, FaTrophy } from 'react-icons/fa';
-import { GiPingPongBat, GiFlame } from 'react-icons/gi';
+import { FaLock, FaMedal, FaTrophy } from 'react-icons/fa';
+import { GiFlame, GiPingPongBat } from 'react-icons/gi';
 
-/**
- * Overall thresholds for entire career
- */
 const OVERALL_MATCH_THRESHOLDS = [10, 20, 50, 100, 200, 500, 1000, 1500, 2000, 2500];
 const OVERALL_WIN_THRESHOLDS = [10, 20, 50, 100, 200, 500, 1000, 1500, 2000, 2500];
 const OVERALL_STREAK_THRESHOLDS = [5, 10, 15, 20, 25];
 
-/**
- * Per-season thresholds (e.g. "Play 5 matches in a single season," "Win 10 in a single season")
- */
 const SEASON_MATCH_THRESHOLDS = [5, 10, 20, 50, 100, 150, 200, 250, 300];
 const SEASON_WIN_THRESHOLDS = [5, 10, 20, 40, 60, 80, 100, 150, 200];
 
-/** Helper: how many times across different seasons a user had X or more of something */
 function countSeasonsAtOrAbove(achievements, prop, threshold) {
   let count = 0;
   achievements.forEach((ach) => {
@@ -35,11 +26,10 @@ function countSeasonsAtOrAbove(achievements, prop, threshold) {
 
 export default function AchievementsPanel({
   achievements = [],
-  overallMatches = 0, // from player.totalMatches
-  overallWins = 0, // from player.wins
-  overallMaxStreak = 0, // from maxWinStreak (or pass from props)
+  overallMatches = 0, 
+  overallWins = 0,
+  overallMaxStreak = 0, 
 }) {
-  // Check if user has any "seasonFinish" achievements at all
   const hasSeasonAchievements = achievements.some(
     (ach) => ach.type === 'seasonFinish'
   );
@@ -52,10 +42,6 @@ export default function AchievementsPanel({
     );
   }
 
-  /** ========================
-   *  1) Top Places (Stars)
-   *  ========================
-   */
   let firstPlaces = 0;
   let secondPlaces = 0;
   let thirdPlaces = 0;
@@ -68,7 +54,6 @@ export default function AchievementsPanel({
     }
   });
 
-  // We'll show these places with <FaMedal> in different colors.
   const starData = [
     {
       label: '1st Place Finishes',
@@ -90,11 +75,6 @@ export default function AchievementsPanel({
     },
   ];
 
-  /** ============================
-   *  2) Overall Achievements
-   *  ============================
-   *  We check totalMatches, totalWins, longest streak. If user surpasses threshold => unlocked.
-   */
   const overallMatchMilestones = OVERALL_MATCH_THRESHOLDS.map((thr) => {
     const unlocked = overallMatches >= thr;
     return {
@@ -129,19 +109,12 @@ export default function AchievementsPanel({
     };
   });
 
-  /** ============================
-   *  3) Season-based Achievements
-   *  ============================
-   *  We have per-season thresholds, e.g. "Play 5 matches in a single season", "Win 10 in a single season".
-   *  If user had 'matchesPlayed >= threshold' in 3 different seasons => count=3 => show the bubble 3.
-   */
-  // For each threshold, we see how many seasons user matched that.
   const seasonMatchMilestones = SEASON_MATCH_THRESHOLDS.map((thr) => {
     const times = countSeasonsAtOrAbove(achievements, 'matchesPlayed', thr);
     const unlocked = times > 0;
     return {
       label: `Played ${thr}+ Matches (Single Season)`,
-      count: times, // how many seasons cleared that threshold
+      count: times,
       unlocked,
       icon: <GiPingPongBat />,
       tooltip: unlocked
@@ -164,8 +137,6 @@ export default function AchievementsPanel({
     };
   });
 
-  // Helper to render a row of "unlocked or locked" icons.
-  // If multiple times unlocked => bubble with the count.
   const renderMilestoneRow = (title, items, showCountBubble = false) => {
     return (
       <div className='mb-4'>
@@ -185,7 +156,6 @@ export default function AchievementsPanel({
                 style={{ color }}
               >
                 {item.icon}
-                {/* If we want a bubble with how many times user unlocked it. */}
                 {item.unlocked && showCountBubble && item.count > 1 && (
                   <span
                     style={{
@@ -206,7 +176,6 @@ export default function AchievementsPanel({
                     {item.count}
                   </span>
                 )}
-                {/* Lock if user hasn't unlocked. */}
                 {!item.unlocked && (
                   <span
                     style={{
@@ -238,12 +207,10 @@ export default function AchievementsPanel({
     );
   };
 
-  /** ============  RENDER ============ */
   return (
     <div className='achievements-wrapper text-gray-700'>
       <h3 className='text-xl font-outfit font-bold mb-4'>Achievements</h3>
 
-      {/* 1) Top-Places row */}
       <div className='mb-4'>
         <h4 className='text-lg font-outfit font-semibold mb-2 text-gray-700'>
           Top Places
@@ -311,7 +278,6 @@ export default function AchievementsPanel({
         </div>
       </div>
 
-      {/* 2) Overall Achievements */}
       {renderMilestoneRow('Total Matches (Overall)', overallMatchMilestones)}
       {renderMilestoneRow('Total Wins (Overall)', overallWinMilestones)}
       {renderMilestoneRow(
@@ -319,17 +285,15 @@ export default function AchievementsPanel({
         overallStreakMilestones
       )}
 
-      {/* 3) Season-based Achievements */}
-      {/* We show "Played X matches in a single season", "Won X matches in a single season" */}
       {renderMilestoneRow(
         'Matches in a Single Season',
         seasonMatchMilestones,
-        true /* show bubble count */
+        true 
       )}
       {renderMilestoneRow(
         'Wins in a Single Season',
         seasonWinMilestones,
-        true /* show bubble count */
+        true 
       )}
     </div>
   );

@@ -55,7 +55,6 @@ const Register = () => {
       );
       const user = userCredential.user;
 
-      // Generate the current date in "dd.mm.yyyy" format
       const userRegistered = getCurrentFormattedDate();
 
       await updateProfile(user, {
