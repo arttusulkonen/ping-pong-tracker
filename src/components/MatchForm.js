@@ -210,7 +210,7 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
             name: player1Doc.name,
             scores: score1Value,
             addedPoints: newPlayer1Rating - player1OverallRating,
-            oleRating: player1OverallRating,
+            oldRating: player1OverallRating,
             newRating: newPlayer1Rating,
           },
           player2: {

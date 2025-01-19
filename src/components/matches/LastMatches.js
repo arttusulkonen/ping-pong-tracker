@@ -56,8 +56,8 @@ const LastMatches = ({ roomId, updateMatches }) => {
       const player1Data = player1Snap.data();
       const player2Data = player2Snap.data();
 
-      const oldP1Rating = match.player1.oleRating ?? match.player1.oldRating;
-      const oldP2Rating = match.player2.oldRating ?? match.player2.oleRating;
+      const oldP1Rating = match.player1.oldRating ?? match.player1.oldRating;
+      const oldP2Rating = match.player2.oldRating ?? match.player2.oldRating;
 
       let { wins: p1Wins = 0, losses: p1Losses = 0 } = player1Data;
       let { wins: p2Wins = 0, losses: p2Losses = 0 } = player2Data;

@@ -30,195 +30,178 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
 
   const finishSeason = async () => {
     try {
-      const roomRef = doc(db, 'rooms', roomId);
+      console.log("> Starting season final calculation...");
+  
+      const roomRef = doc(db, "rooms", roomId);
       const roomSnap = await getDoc(roomRef);
       if (!roomSnap.exists()) {
-        console.error(`Room ${roomId} not found!`);
+        console.error(`Room with ID ${roomId} not found.`);
         return;
       }
+  
       const roomData = roomSnap.data();
-
-      const matchesRef = collection(db, 'matches');
-      const qMatches = query(matchesRef, where('roomId', '==', roomId));
+  
+      const matchesRef = collection(db, "matches");
+      const qMatches = query(matchesRef, where("roomId", "==", roomId));
       const matchesSnap = await getDocs(qMatches);
       const matches = matchesSnap.docs.map((docSnap) => docSnap.data());
-      if (matches?.length === 0) {
-        console.warn('No matches found. Finishing season anyway...');
+      if (matches.length === 0) {
+        console.warn("No matches found. Finishing the season without matches.");
+        return;
       }
-
+  
       const statsByUser = {};
-
-      function computeLongestWinStreak(userId, userMatches) {
-        const sorted = [...userMatches]?.sort((a, b) => {
-          const [dA, mA, yA, hA, minA, sA] =
-            a?.timestamp?.split(/[\s.:]/) || [];
-          const [dB, mB, yB, hB, minB, sB] =
-            b?.timestamp?.split(/[\s.:]/) || [];
-          const dateA = new Date(+yA, mA - 1, +dA, +hA, +minA, +sA);
-          const dateB = new Date(+yB, mB - 1, +dB, +hB, +minB, +sB);
-          return dateA - dateB;
-        });
-        let maxStreak = 0;
-        let currentStreak = 0;
-        for (const match of sorted || []) {
-          const isWinner =
-            match?.winner ===
-            (match?.player1Id === userId
-              ? match?.player1?.name
-              : match?.player2?.name);
-          if (isWinner) {
-            currentStreak++;
-            if (currentStreak > maxStreak) maxStreak = currentStreak;
-          } else {
-            currentStreak = 0;
-          }
-        }
-        return maxStreak;
-      }
-
-      for (const match of matches || []) {
-        const { player1, player2, winner } = match || {};
-        const p1Id = match?.player1Id;
-        const p2Id = match?.player2Id;
-
+  
+      for (const match of matches) {
+        const { player1, player2, winner } = match;
+        const p1Id = match.player1Id;
+        const p2Id = match.player2Id;
+  
         if (!statsByUser[p1Id]) {
           statsByUser[p1Id] = {
             userId: p1Id,
-            name: player1?.name || 'Unknown',
+            name: player1.name || "Unknown",
             wins: 0,
             losses: 0,
             totalAddedPoints: 0,
             matches: [],
+            rating: player1.rating || 1000,
           };
         }
+  
         if (!statsByUser[p2Id]) {
           statsByUser[p2Id] = {
             userId: p2Id,
-            name: player2?.name || 'Unknown',
+            name: player2.name || "Unknown",
             wins: 0,
             losses: 0,
             totalAddedPoints: 0,
             matches: [],
+            rating: player2.rating || 1000,
           };
         }
-
-        if (winner === player1?.name) {
+  
+        if (winner === player1.name) {
           statsByUser[p1Id].wins++;
           statsByUser[p2Id].losses++;
-        } else if (winner === player2?.name) {
+        } else if (winner === player2.name) {
           statsByUser[p2Id].wins++;
           statsByUser[p1Id].losses++;
         }
-
-        statsByUser[p1Id].totalAddedPoints += player1?.addedPoints ?? 0;
-        statsByUser[p2Id].totalAddedPoints += player2?.addedPoints ?? 0;
-        statsByUser[p1Id].matches?.push(match);
-        statsByUser[p2Id].matches?.push(match);
+  
+        statsByUser[p1Id].totalAddedPoints += player1.addedPoints || 0;
+        statsByUser[p2Id].totalAddedPoints += player2.addedPoints || 0;
+  
+        statsByUser[p1Id].matches.push(match);
+        statsByUser[p2Id].matches.push(match);
       }
-
-      let playersStats = Object.values(statsByUser).map((p) => {
-        const matchesPlayed = (p?.wins || 0) + (p?.losses || 0);
-        return { ...p, matchesPlayed };
+  
+      let playersStats = Object.values(statsByUser).map((player) => {
+        const matchesPlayed = player.wins + player.losses;
+        player.matchesPlayed = matchesPlayed;
+        return player;
       });
-
-      for (const p of playersStats || []) {
-        p.longestWinStreak = computeLongestWinStreak(p?.userId, p?.matches);
-      }
-
-      const sumMatches =
-        playersStats?.reduce((acc, p) => acc + (p?.matchesPlayed || 0), 0) || 0;
-      const averageMatches =
-        playersStats?.length > 0 ? sumMatches / playersStats.length : 0;
-
-      playersStats =
-        playersStats?.map((p) => {
-          const baseScore =
-            (p?.wins || 0) * 2 +
-            (p?.totalAddedPoints || 0) +
-            (p?.longestWinStreak || 0) * 2;
-          let finalScore = baseScore;
-          if ((p?.matchesPlayed || 0) < averageMatches) {
-            finalScore *= 0.9;
-          }
-          return { ...p, finalScore };
-        }) || [];
-
-      playersStats.sort((a, b) => (b?.finalScore || 0) - (a?.finalScore || 0));
-
-      playersStats.forEach((p, i) => {
-        p.place = i + 1;
+  
+      const totalMatches = playersStats.reduce((acc, p) => acc + p.matchesPlayed, 0);
+      const averageMatches = totalMatches / playersStats.length;
+  
+      console.log("> Average number of matches:", averageMatches);
+  
+      playersStats = playersStats.map((player) => {
+        const baseScore = player.wins * 2 + player.rating * 0.1;
+  
+        let normalizedAddedPoints = player.totalAddedPoints;
+        if (player.matchesPlayed > averageMatches) {
+          const excessRatio = player.matchesPlayed / averageMatches;
+          normalizedAddedPoints /= excessRatio;
+        }
+  
+        let finalScore = baseScore + normalizedAddedPoints;
+  
+        if (player.matchesPlayed < averageMatches) {
+          finalScore *= 0.9; // Penalty for playing fewer matches
+        }
+  
+        return {
+          ...player,
+          finalScore,
+        };
       });
-
-      const now = new Date()?.toLocaleString('fi-FI') || '';
-      const seasonResult =
-        playersStats?.map((p) => ({
-          userId: p?.userId,
-          name: p?.name,
-          place: p?.place,
-          matchesPlayed: p?.matchesPlayed,
-          wins: p?.wins,
-          losses: p?.losses,
-          totalAddedPoints: p?.totalAddedPoints,
-          longestWinStreak: p?.longestWinStreak,
-          finalScore: p?.finalScore,
-        })) || [];
-
-      let currentSeasonHistory = roomData?.seasonHistory || [];
-      if (!Array.isArray(currentSeasonHistory)) {
-        currentSeasonHistory = [];
-      }
-
+  
+      playersStats.sort((a, b) => b.finalScore - a.finalScore);
+  
+      playersStats.forEach((player, index) => {
+        player.place = index + 1;
+      });
+  
+      console.log("> Final season results:");
+      console.log(JSON.stringify(playersStats, null, 2));
+  
+      // Update season history in the room
+      const now = new Date().toLocaleString("fi-FI");
+      const seasonResult = playersStats.map((p) => ({
+        userId: p.userId,
+        name: p.name,
+        place: p.place,
+        matchesPlayed: p.matchesPlayed,
+        wins: p.wins,
+        losses: p.losses,
+        totalAddedPoints: p.totalAddedPoints,
+        finalScore: p.finalScore,
+      }));
+  
       const newHistoryEntry = {
         dateFinished: now,
         summary: seasonResult,
       };
-
-      if (currentSeasonHistory?.length > 0) {
-        currentSeasonHistory[currentSeasonHistory.length - 1] = newHistoryEntry;
-      } else {
-        currentSeasonHistory?.push(newHistoryEntry);
+  
+      let currentSeasonHistory = roomData.seasonHistory || [];
+      if (!Array.isArray(currentSeasonHistory)) {
+        currentSeasonHistory = [];
       }
-
+      currentSeasonHistory.push(newHistoryEntry);
+  
       await updateDoc(roomRef, {
         seasonHistory: currentSeasonHistory,
       });
-
-      for (const p of playersStats || []) {
-        const userRef = doc(db, 'users', p?.userId);
+  
+      console.log("> Season history updated.");
+  
+      // Update player achievements
+      for (const player of playersStats) {
+        const userRef = doc(db, "users", player.userId);
         const userSnap = await getDoc(userRef);
         if (!userSnap.exists()) {
-          console.warn(`User ${p?.userId} not found!`);
+          console.warn(`User with ID ${player.userId} not found.`);
           continue;
         }
+  
         const userData = userSnap.data();
-        const achievements = Array.isArray(userData?.achievements)
-          ? userData?.achievements
+        const achievements = Array.isArray(userData.achievements)
+          ? userData.achievements
           : [];
-
-        const safeNumber = (val) => (typeof val === 'number' ? val : 0);
-
+  
         const newAchievement = {
-          type: 'seasonFinish',
+          type: "seasonFinish",
           roomId,
-          roomName: roomData?.name || 'Unknown Room',
+          roomName: roomData.name || "Unknown Room",
           dateFinished: now,
-          place: safeNumber(p?.place),
-          matchesPlayed: safeNumber(p?.matchesPlayed),
-          wins: safeNumber(p?.wins),
-          losses: safeNumber(p?.losses),
-          totalAddedPoints: safeNumber(p?.totalAddedPoints),
-          longestWinStreak: safeNumber(p?.longestWinStreak),
-          finalScore: safeNumber(p?.finalScore),
+          place: player.place,
+          matchesPlayed: player.matchesPlayed,
+          wins: player.wins,
+          losses: player.losses,
+          totalAddedPoints: player.totalAddedPoints,
+          finalScore: player.finalScore,
         };
-
-        achievements?.push(newAchievement);
+  
+        achievements.push(newAchievement);
+  
         await updateDoc(userRef, { achievements });
       }
-
-      alert('Season finished! Achievements granted.');
-      setViewMode('final');
+  
+      console.log("> Player achievements updated.");
     } catch (error) {
-      console.error('Error finishing season:', error);
+      console.error("> Error finalizing the season:", error);
     }
   };
 
@@ -774,7 +757,7 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
                   <th
                     className='py-3 px-6 text-left'
                     data-tooltip-id='col-tooltip-fair'
-                    data-tooltip-html="<div class='tooltip-content p-2 text-base'>Fair Score is wins*2 + totalAddedPoints + longestWinStreak*2, minus 10% if fewer matches than average.</div>"
+                    data-tooltip-html="<div class='tooltip-content p-2 text-base'>Fair Score is wins*2 + totalAddedPoints (normalized for excess matches) + 10% of the player's rating, minus 10% if fewer matches than average.</div>"
                   >
                     Fair Score
                     <Tooltip id='col-tooltip-fair' />
