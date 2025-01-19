@@ -10,7 +10,7 @@ import Register from './components/registration/Register';
 import CreateRoom from './components/rooms/CreateRoom';
 import Room from './components/rooms/Room';
 import RoomList from './components/rooms/RoomList';
-import WelcomePage from './components/WelcomePage'; // Import the WelcomePage component
+import WelcomePage from './components/WelcomePage'; 
 import { auth, db } from './firebase';
 
 function App() {
