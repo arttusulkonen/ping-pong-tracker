@@ -1,5 +1,3 @@
-// Button and form to add a new player to the database
-
 import { addDoc, collection } from 'firebase/firestore';
 import React, { useState } from 'react';
 import { db } from '../firebase';

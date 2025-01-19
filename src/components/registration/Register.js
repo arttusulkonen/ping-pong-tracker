@@ -18,11 +18,10 @@ const Register = () => {
   const [passwordError, setPasswordError] = useState(false);
   const [nameError, setNameError] = useState(false);
 
-  // Function to format date as "dd.mm.yyyy"
   const getCurrentFormattedDate = () => {
     const now = new Date();
     const day = String(now.getDate()).padStart(2, '0');
-    const month = String(now.getMonth() + 1).padStart(2, '0'); // Months are zero-based
+    const month = String(now.getMonth() + 1).padStart(2, '0');
     const year = now.getFullYear();
     return `${day}.${month}.${year}`;
   };

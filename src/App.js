@@ -10,7 +10,7 @@ import Register from './components/registration/Register';
 import CreateRoom from './components/rooms/CreateRoom';
 import Room from './components/rooms/Room';
 import RoomList from './components/rooms/RoomList';
-import WelcomePage from './components/WelcomePage'; 
+import WelcomePage from './components/WelcomePage';
 import { auth, db } from './firebase';
 
 function App() {
@@ -27,7 +27,6 @@ function App() {
     setShowModal(false);
   };
 
-  // Fetch rooms from Firestore
   const updateRoomList = async () => {
     try {
       const querySnapshot = await getDocs(collection(db, 'rooms'));
@@ -38,7 +37,6 @@ function App() {
       setRooms(roomsData);
     } catch (error) {
       console.error("Error fetching rooms:", error);
-      // Optionally, add a notification for the error
     } finally {
       setLoading(false);
     }

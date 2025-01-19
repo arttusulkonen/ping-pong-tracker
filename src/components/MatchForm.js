@@ -7,7 +7,7 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
-import { FaSpinner, FaTrash } from 'react-icons/fa'; // Importing the trash icon
+import { FaSpinner, FaTrash } from 'react-icons/fa';
 import { Store } from 'react-notifications-component';
 import { db } from '../firebase';
 

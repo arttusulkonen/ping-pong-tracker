@@ -66,7 +66,6 @@ const PlayersTable = () => {
   
       const currentUserRooms = currentUserSnap.data().rooms || [];
       if (currentUserRooms.length === 0) {
-        console.log('Current user is not in any rooms.');
         setPlayers([]);
         return;
       }
@@ -183,7 +182,6 @@ const PlayersTable = () => {
         const p1Id = match.player1Id;
         const p2Id = match.player2Id;
 
-        // Player 1
         if (statsByUser[p1Id]) {
           statsByUser[p1Id].matchesPlayed += 1;
           if (winner === player1.name) {
@@ -310,9 +308,6 @@ const PlayersTable = () => {
         await updateDoc(userRef, {
           achievements: [...existingAchievements, achievement],
         });
-        console.log(
-          `Achievement assigned to ${player.name} for finishing ${player.rank} place this month.`
-        );
       } catch (error) {
         console.error(`Error assigning achievement to ${player.name}:`, error);
       }

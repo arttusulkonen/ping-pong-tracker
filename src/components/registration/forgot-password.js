@@ -24,7 +24,7 @@ const ResetPassword = () => {
           onScreen: true,
         },
       });
-      navigate('/login'); // Redirect to login page
+      navigate('/login');
     } catch (error) {
       console.error('Error sending password reset email:', error);
       Store.addNotification({

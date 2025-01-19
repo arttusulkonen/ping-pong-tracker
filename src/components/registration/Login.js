@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Store } from 'react-notifications-component';
 import { Link, useNavigate } from 'react-router-dom';
 import { auth } from '../../firebase';
-import AuthForm from './AuthForm'; // Import the reusable AuthForm
+import AuthForm from './AuthForm';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -33,7 +33,7 @@ const Login = () => {
           onScreen: true,
         },
       });
-      navigate('/'); // Redirect to home page
+      navigate('/');
     } catch (error) {
       if (error.code === 'auth/user-not-found') {
         setEmailError(true);

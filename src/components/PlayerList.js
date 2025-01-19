@@ -30,7 +30,6 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
 
   const finishSeason = async () => {
     try {
-      console.log("> Starting season final calculation...");
   
       const roomRef = doc(db, "rooms", roomId);
       const roomSnap = await getDoc(roomRef);
@@ -105,8 +104,6 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
       const totalMatches = playersStats.reduce((acc, p) => acc + p.matchesPlayed, 0);
       const averageMatches = totalMatches / playersStats.length;
   
-      console.log("> Average number of matches:", averageMatches);
-  
       playersStats = playersStats.map((player) => {
         const baseScore = player.wins * 2 + player.rating * 0.1;
   
@@ -119,7 +116,7 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
         let finalScore = baseScore + normalizedAddedPoints;
   
         if (player.matchesPlayed < averageMatches) {
-          finalScore *= 0.9; // Penalty for playing fewer matches
+          finalScore *= 0.9; 
         }
   
         return {
@@ -133,11 +130,7 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
       playersStats.forEach((player, index) => {
         player.place = index + 1;
       });
-  
-      console.log("> Final season results:");
-      console.log(JSON.stringify(playersStats, null, 2));
-  
-      // Update season history in the room
+       
       const now = new Date().toLocaleString("fi-FI");
       const seasonResult = playersStats.map((p) => ({
         userId: p.userId,
@@ -164,10 +157,7 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
       await updateDoc(roomRef, {
         seasonHistory: currentSeasonHistory,
       });
-  
-      console.log("> Season history updated.");
-  
-      // Update player achievements
+        
       for (const player of playersStats) {
         const userRef = doc(db, "users", player.userId);
         const userSnap = await getDoc(userRef);
@@ -198,8 +188,7 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
   
         await updateDoc(userRef, { achievements });
       }
-  
-      console.log("> Player achievements updated.");
+
     } catch (error) {
       console.error("> Error finalizing the season:", error);
     }
@@ -374,7 +363,6 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
           rating: player?.rating || 1000,
         })) || [];
       await updateDoc(roomRef, { members: updatedMembersList });
-      console.log('Room data updated successfully.');
     } catch (error) {
       console.error('Error updating room members:', error);
     }
@@ -723,7 +711,6 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
         </>
       )}
 
-      {/* FINAL TABLE */}
       {viewMode === 'final' && (
         <div className='bg-white shadow rounded p-4 text-black'>
           <h2 className='text-xl font-bold mb-4'>Final Season Results</h2>
