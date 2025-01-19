@@ -1,22 +1,5 @@
 import { faEdit } from '@fortawesome/free-solid-svg-icons';
-import AchievementsPanel from './AchievementsPanel';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  query,
-  setDoc,
-  where,
-} from 'firebase/firestore';
-import React, { useCallback, useEffect, useState } from 'react';
-import { useAuthState } from 'react-firebase-hooks/auth';
-import { Store } from 'react-notifications-component';
-import { useParams } from 'react-router-dom';
-import { Tooltip } from 'react-tooltip';
-import 'react-tooltip/dist/react-tooltip.css';
-import { auth, db } from '../../firebase';
 import {
   CategoryScale,
   Chart as ChartJS,
@@ -27,8 +10,25 @@ import {
   PointElement,
   Title,
 } from 'chart.js';
-import { Line } from 'react-chartjs-2';
 import zoomPlugin from 'chartjs-plugin-zoom';
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  setDoc,
+  where,
+} from 'firebase/firestore';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Line } from 'react-chartjs-2';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { Store } from 'react-notifications-component';
+import { useParams } from 'react-router-dom';
+import { Tooltip } from 'react-tooltip';
+import 'react-tooltip/dist/react-tooltip.css';
+import { auth, db } from '../../firebase';
+import AchievementsPanel from './AchievementsPanel';
 
 ChartJS.register(
   CategoryScale,
@@ -530,10 +530,16 @@ const Player = ({ onNameUpdate }) => {
     };
   };
 
+  const calculateVisibleRange = (dataLength) => {
+    const visibleStart = Math.floor(dataLength * 0.7);
+    const visibleEnd = dataLength - 1;
+    return { min: visibleStart, max: visibleEnd };
+  };
+
   return (
-    <div className='container mx-auto px-4 py-8'>
+    <div className='container mx-auto'>
       <h1 className='text-3xl font-outfit font-bold mb-6'>Player Profile</h1>
-      <div className='bg-white shadow rounded-lg p-6 mb-8 relative'>
+      <div className='bg-white shadow rounded-lg p-2 mt-4 mb-4 relative'>
         <div className='flex flex-col sm:flex-row justify-between items-start'>
           {/* Player Info Section */}
           <div className='w-full sm:w-1/2'>
@@ -659,284 +665,273 @@ const Player = ({ onNameUpdate }) => {
         ))}
       </select>
       {opponentStats && (
-        <div className='bg-white shadow rounded-lg p-6 mb-8'>
-          {selectedOpponent === '' ? (
-            <h3 className='text-xl font-outfit font-bold mb-4 text-gray-700'>
-              Overall Statistics (All Matches)
-            </h3>
-          ) : (
-            <h3 className='text-xl font-outfit font-bold mb-4 text-gray-700'>
-              Statistics against{' '}
-              {opponentsList.find((o) => o.id === selectedOpponent)?.name}
-            </h3>
-          )}
-          <p className='text-gray-700'>
-            <strong>Matches Played:</strong> {opponentStats.totalMatches}
-          </p>
-          <p className='text-gray-700'>
-            <strong>Matches Won:</strong> {opponentStats.wins}
-          </p>
-          <p className='text-gray-700'>
-            <strong>Matches Lost:</strong> {opponentStats.losses}
-          </p>
-          <p className='text-gray-700'>
-            <strong>Win Percentage:</strong>{' '}
-            {opponentStats.totalMatches
-              ? `${((opponentStats.wins / opponentStats.totalMatches) * 100).toFixed(2)}%`
-              : '0%'}
-          </p>
-          <p className='text-gray-700'>
-            <strong>Best Win Margin:</strong> {opponentStats.maxWinMargin}
-          </p>
-          <p className='text-gray-700'>
-            <strong>Worst Loss Margin:</strong>{' '}
-            {Math.abs(opponentStats.maxLossMargin)}
-          </p>
-          <p className='text-gray-700'>
-            <strong>Points Scored:</strong> {opponentStats.gainedScores}
-          </p>
-          <p className='text-gray-700'>
-            <strong>Points Conceded:</strong> {opponentStats.lostScores}
-          </p>
-          <p className='text-gray-700'>
-            <strong>Points Difference:</strong>{' '}
-            {opponentStats.gainedScores - opponentStats.lostScores}
-          </p>
-          <p className='text-gray-700'>
-            <strong>Longest Winning Streak:</strong>{' '}
-            {opponentStats.maxWinStreak}
-          </p>
-          <p className='text-gray-700'>
-            <strong>Longest Losing Streak:</strong>{' '}
-            {opponentStats.maxLossStreak}
-          </p>
-          {filteredMatches.length > 0 && (
-            <div className='bg-white shadow rounded-lg p-6 mb-8'>
+        <>
+          <div className='bg-white shadow rounded-lg p-2 mt-4 mb-4'>
+            {selectedOpponent === '' ? (
               <h3 className='text-xl font-outfit font-bold mb-4 text-gray-700'>
-                Match Performance Over Time
+                Overall Statistics (All Matches)
               </h3>
-              <Line
-                data={getChartData()}
-                options={{
-                  responsive: true,
-                  plugins: {
-                    legend: { display: true, position: 'top' },
-                    tooltip: {
-                      callbacks: {
-                        label: (tooltipItem) => {
-                          const matchIndex = tooltipItem.dataIndex;
-                          const sorted = [...filteredMatches].sort(
-                            (a, b) =>
-                              new Date(a.timestamp) - new Date(b.timestamp)
-                          );
-                          const match = sorted[matchIndex];
-                          const winner = match.winner;
-                          const playerScore =
-                            match.player1Id === userId
-                              ? match.player1.scores
-                              : match.player2.scores;
-                          const opponentScore =
-                            match.player1Id === userId
-                              ? match.player2.scores
-                              : match.player1.scores;
-                          const ratingAfterMatch =
-                            match.player1Id === userId
-                              ? match.player1.newRating
-                              : match.player2.newRating;
-                          return [
-                            `Winner: ${winner}`,
-                            `Score: ${playerScore} - ${opponentScore}`,
-                            `Rating After Match: ${ratingAfterMatch}`,
-                            `Date: ${match.timestamp}`,
-                          ].join('\n');
+            ) : (
+              <h3 className='text-xl font-outfit font-bold mb-4 text-gray-700'>
+                Statistics against{' '}
+                {opponentsList.find((o) => o.id === selectedOpponent)?.name}
+              </h3>
+            )}
+            <p className='text-gray-700'>
+              <strong>Matches Played:</strong> {opponentStats.totalMatches}
+            </p>
+            <p className='text-gray-700'>
+              <strong>Matches Won:</strong> {opponentStats.wins}
+            </p>
+            <p className='text-gray-700'>
+              <strong>Matches Lost:</strong> {opponentStats.losses}
+            </p>
+            <p className='text-gray-700'>
+              <strong>Win Percentage:</strong>{' '}
+              {opponentStats.totalMatches
+                ? `${((opponentStats.wins / opponentStats.totalMatches) * 100).toFixed(2)}%`
+                : '0%'}
+            </p>
+            <p className='text-gray-700'>
+              <strong>Best Win Margin:</strong> {opponentStats.maxWinMargin}
+            </p>
+            <p className='text-gray-700'>
+              <strong>Worst Loss Margin:</strong>{' '}
+              {Math.abs(opponentStats.maxLossMargin)}
+            </p>
+            <p className='text-gray-700'>
+              <strong>Points Scored:</strong> {opponentStats.gainedScores}
+            </p>
+            <p className='text-gray-700'>
+              <strong>Points Conceded:</strong> {opponentStats.lostScores}
+            </p>
+            <p className='text-gray-700'>
+              <strong>Points Difference:</strong>{' '}
+              {opponentStats.gainedScores - opponentStats.lostScores}
+            </p>
+            <p className='text-gray-700'>
+              <strong>Longest Winning Streak:</strong>{' '}
+              {opponentStats.maxWinStreak}
+            </p>
+            <p className='text-gray-700'>
+              <strong>Longest Losing Streak:</strong>{' '}
+              {opponentStats.maxLossStreak}
+            </p>
+          </div>
+          <div className=''>
+            {filteredMatches.length > 0 && (
+              <div className='bg-white shadow rounded-lg p-2 mt-4 mb-4'>
+                <h3 className='text-xl font-outfit font-bold mb-4 text-gray-700'>
+                  Match Performance Over Time
+                </h3>
+                <Line
+                  data={getChartData()}
+                  options={{
+                    responsive: true,
+                    plugins: {
+                      legend: { display: true, position: 'top' },
+                      tooltip: {
+                        callbacks: {
+                          label: (tooltipItem) => {
+                            const matchIndex = tooltipItem.dataIndex;
+                            const sorted = [...filteredMatches].sort(
+                              (a, b) =>
+                                new Date(a.timestamp) - new Date(b.timestamp)
+                            );
+                            const match = sorted[matchIndex];
+                            return `Match Date: ${match.timestamp}`;
+                          },
+                        },
+                      },
+                      zoom: {
+                        pan: { enabled: true, mode: 'x' },
+                        zoom: {
+                          pinch: { enabled: true },
+                          wheel: { enabled: true },
+                          mode: 'x',
                         },
                       },
                     },
-                    zoom: {
-                      pan: { enabled: true, mode: 'x' },
-                      zoom: {
-                        pinch: { enabled: true },
-                        wheel: { enabled: true },
-                        mode: 'x',
+                    scales: {
+                      x: {
+                        type: 'category',
+                        title: {
+                          display: true,
+                          text: 'Timeline',
+                        },
+                        ticks: {
+                          autoSkip: true,
+                          maxTicksLimit: 10,
+                        },
+                        ...calculateVisibleRange(filteredMatches.length),
                       },
-                    },
-                  },
-                  scales: {
-                    x: {
-                      type: 'category',
-                      title: {
-                        display: true,
-                        text: 'Timeline',
-                      },
-                      ticks: {
-                        autoSkip: true,
-                        maxTicksLimit: 10,
-                      },
-                    },
-                    y: {
-                      beginAtZero: true,
-                      title: {
-                        display: true,
-                        text: 'Values',
-                      },
-                    },
-                  },
-                }}
-              />
-            </div>
-          )}
-          {filteredMatches.length > 0 && (
-            <div className='bg-white shadow rounded-lg p-6 mb-8'>
-              <h3 className='text-xl font-outfit font-bold mb-4 text-gray-700'>
-                Score Difference Over Time
-              </h3>
-              <Line
-                data={getScoreDifferenceData()}
-                options={{
-                  responsive: true,
-                  plugins: {
-                    legend: { display: true, position: 'top' },
-                    tooltip: {
-                      callbacks: {
-                        label: (tooltipItem) => {
-                          const matchIndex = tooltipItem.dataIndex;
-                          const sorted = [...filteredMatches].sort(
-                            (a, b) =>
-                              new Date(a.timestamp) - new Date(b.timestamp)
-                          );
-                          const match = sorted[matchIndex];
-                          const playerScore =
-                            match.player1Id === userId
-                              ? match.player1.scores
-                              : match.player2.scores;
-                          const opponentScore =
-                            match.player1Id === userId
-                              ? match.player2.scores
-                              : match.player1.scores;
-                          const scoreDifference = playerScore - opponentScore;
-                          const winner = match.winner;
-                          return [
-                            `Winner: ${winner}`,
-                            `Player Score: ${playerScore}`,
-                            `Opponent Score: ${opponentScore}`,
-                            `Score Difference: ${scoreDifference}`,
-                            `Date: ${match.timestamp}`,
-                          ].join('\n');
+                      y: {
+                        beginAtZero: true,
+                        title: {
+                          display: true,
+                          text: 'Values',
                         },
                       },
                     },
-                    zoom: {
-                      pan: { enabled: true, mode: 'x' },
+                  }}
+                />
+              </div>
+            )}
+            {filteredMatches.length > 0 && (
+              <div className='bg-white shadow rounded-lg p-2 mt-4 mb-4'>
+                <h3 className='text-xl font-outfit font-bold text-gray-700'>
+                  Score Difference Over Time
+                </h3>
+                <Line
+                  data={getScoreDifferenceData()}
+                  options={{
+                    responsive: true,
+                    plugins: {
+                      legend: { display: true, position: 'top' },
+                      tooltip: {
+                        callbacks: {
+                          label: (tooltipItem) => {
+                            const matchIndex = tooltipItem.dataIndex;
+                            const sorted = [...filteredMatches].sort(
+                              (a, b) =>
+                                new Date(a.timestamp) - new Date(b.timestamp)
+                            );
+                            const match = sorted[matchIndex];
+                            const playerScore =
+                              match.player1Id === userId
+                                ? match.player1.scores
+                                : match.player2.scores;
+                            const opponentScore =
+                              match.player1Id === userId
+                                ? match.player2.scores
+                                : match.player1.scores;
+                            const scoreDifference = playerScore - opponentScore;
+                            const winner = match.winner;
+                            return [
+                              `Winner: ${winner}`,
+                              `Player Score: ${playerScore}`,
+                              `Opponent Score: ${opponentScore}`,
+                              `Score Difference: ${scoreDifference}`,
+                              `Date: ${match.timestamp}`,
+                            ].join('\n');
+                          },
+                        },
+                      },
                       zoom: {
-                        pinch: { enabled: true },
-                        wheel: { enabled: true },
-                        mode: 'x',
-                      },
-                    },
-                  },
-                  scales: {
-                    x: {
-                      type: 'category',
-                      title: {
-                        display: true,
-                        text: 'Timeline',
-                      },
-                      ticks: {
-                        autoSkip: true,
-                        maxTicksLimit: 10,
-                      },
-                    },
-                    y: {
-                      beginAtZero: true,
-                      title: {
-                        display: true,
-                        text: 'Values',
-                      },
-                    },
-                  },
-                }}
-              />
-            </div>
-          )}
-          {filteredMatches.length > 0 && (
-            <div className='bg-white shadow rounded-lg p-6 mb-8'>
-              <h3 className='text-xl font-outfit font-bold mb-4 text-gray-700'>
-                Rating Over Time
-              </h3>
-              <Line
-                data={getRatingData()}
-                options={{
-                  responsive: true,
-                  plugins: {
-                    legend: { display: true, position: 'top' },
-                    tooltip: {
-                      callbacks: {
-                        label: (tooltipItem) => {
-                          const matchIndex = tooltipItem.dataIndex;
-                          const sorted = [...filteredMatches].sort(
-                            (a, b) =>
-                              new Date(a.timestamp) - new Date(b.timestamp)
-                          );
-                          const match = sorted[matchIndex];
-                          const oldRating =
-                            match.player1Id === userId
-                              ? match.player1.oldRating
-                              : match.player2.oldRating;
-                          const newRating =
-                            match.player1Id === userId
-                              ? match.player1.newRating
-                              : match.player2.newRating;
-                          const ratingChange = newRating - oldRating;
-                          return [
-                            `Old Rating: ${oldRating}`,
-                            `New Rating: ${newRating}`,
-                            `Change: ${
-                              ratingChange > 0
-                                ? `+${ratingChange}`
-                                : ratingChange
-                            }`,
-                            `Date: ${match.timestamp}`,
-                          ].join('\n');
+                        pan: { enabled: true, mode: 'x' },
+                        zoom: {
+                          pinch: { enabled: true },
+                          wheel: { enabled: true },
+                          mode: 'x',
                         },
                       },
                     },
-                    zoom: {
-                      pan: { enabled: true, mode: 'x' },
+                    scales: {
+                      x: {
+                        type: 'category',
+                        title: {
+                          display: true,
+                          text: 'Timeline',
+                        },
+                        ticks: {
+                          autoSkip: true,
+                          maxTicksLimit: 10,
+                        },
+                        ...calculateVisibleRange(filteredMatches.length),
+                      },
+                      y: {
+                        beginAtZero: true,
+                        title: {
+                          display: true,
+                          text: 'Values',
+                        },
+                      },
+                    },
+                  }}
+                />
+              </div>
+            )}
+            {filteredMatches.length > 0 && (
+              <div className='bg-white shadow rounded-lg p-2 mt-4 mb-4'>
+                <h3 className='text-xl font-outfit font-bold mb-4 text-gray-700'>
+                  Rating Over Time
+                </h3>
+                <Line
+                  data={getRatingData()}
+                  options={{
+                    responsive: true,
+                    plugins: {
+                      legend: { display: true, position: 'top' },
+                      tooltip: {
+                        callbacks: {
+                          label: (tooltipItem) => {
+                            const matchIndex = tooltipItem.dataIndex;
+                            const sorted = [...filteredMatches].sort(
+                              (a, b) =>
+                                new Date(a.timestamp) - new Date(b.timestamp)
+                            );
+                            const match = sorted[matchIndex];
+                            const oldRating =
+                              match.player1Id === userId
+                                ? match.player1.oldRating
+                                : match.player2.oldRating;
+                            const newRating =
+                              match.player1Id === userId
+                                ? match.player1.newRating
+                                : match.player2.newRating;
+                            const ratingChange = newRating - oldRating;
+                            return [
+                              `Old Rating: ${oldRating}`,
+                              `New Rating: ${newRating}`,
+                              `Change: ${
+                                ratingChange > 0
+                                  ? `+${ratingChange}`
+                                  : ratingChange
+                              }`,
+                              `Date: ${match.timestamp}`,
+                            ].join('\n');
+                          },
+                        },
+                      },
                       zoom: {
-                        pinch: { enabled: true },
-                        wheel: { enabled: true },
-                        mode: 'x',
+                        pan: { enabled: true, mode: 'x' },
+                        zoom: {
+                          pinch: { enabled: true },
+                          wheel: { enabled: true },
+                          mode: 'x',
+                        },
                       },
                     },
-                  },
-                  scales: {
-                    x: {
-                      type: 'category',
-                      title: {
-                        display: true,
-                        text: 'Timeline',
+                    scales: {
+                      x: {
+                        type: 'category',
+                        title: {
+                          display: true,
+                          text: 'Timeline',
+                        },
+                        ticks: {
+                          autoSkip: true,
+                          maxTicksLimit: 10,
+                        },
+                        ...calculateVisibleRange(filteredMatches.length),
                       },
-                      ticks: {
-                        autoSkip: true,
-                        maxTicksLimit: 10,
+                      y: {
+                        beginAtZero: true,
+                        title: {
+                          display: true,
+                          text: 'Values',
+                        },
                       },
                     },
-                    y: {
-                      beginAtZero: true,
-                      title: {
-                        display: true,
-                        text: 'Values',
-                      },
-                    },
-                  },
-                }}
-              />
-            </div>
-          )}
-        </div>
+                  }}
+                />
+              </div>
+            )}
+          </div>
+        </>
       )}
       <h2 className='text-2xl font-outfit font-bold mb-4'>Last Matches</h2>
-      <div className='overflow-x-auto'>
+      <div className='overflow-x-auto max-h-96'>
         <table className='min-w-full bg-white shadow rounded-lg'>
           <thead>
             <tr>
