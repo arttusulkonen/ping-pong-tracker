@@ -577,6 +577,29 @@ const PlayersTable = () => {
       </div>
       <Tooltip />
       <div className='overflow-x-auto'>{renderTable(sortedStats)}</div>
+      <div className='bg-gray-100 shadow-md rounded-lg mt-6 p-4'>
+        <h3 className='text-lg font-semibold text-gray-700 mb-2'>How Rankings Are Calculated:</h3>
+        <p className='text-sm text-gray-700 mb-2'>
+          Rankings are based on the <strong>final score</strong>, which is calculated as follows:
+        </p>
+        <ul className='list-disc list-inside text-sm text-gray-700 mb-4'>
+          <li>
+            <strong>Wins:</strong> Each win adds 2 points to the score.
+          </li>
+          <li>
+            <strong>Total Added Points:</strong> Bonus points earned in matches are included.
+          </li>
+          <li>
+            <strong>Longest Win Streak:</strong> Each win in the longest streak adds an additional 2 points.
+          </li>
+          <li>
+            <strong>Penalty for Low Participation:</strong> Players who have played fewer matches than the average number of matches receive a 10% score penalty.
+          </li>
+        </ul>
+        <p className='text-sm text-gray-700'>
+          Players with a higher final score are ranked higher. In case of a tie, names are sorted alphabetically.
+        </p>
+      </div>
     </div>
   );
 };
