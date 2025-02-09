@@ -12,11 +12,10 @@ import { Store } from 'react-notifications-component';
 import { db } from '../firebase';
 
 const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
-
-  const [players, setPlayers] = useState([]); 
+  const [players, setPlayers] = useState([]);
   const [player1, setPlayer1] = useState('');
-  const [player2, setPlayer2] = useState(''); 
-  const [matches, setMatches] = useState([{ score1: '', score2: '' }]); 
+  const [player2, setPlayer2] = useState('');
+  const [matches, setMatches] = useState([{ score1: '', score2: '' }]);
   const [loading, setLoading] = useState(false);
 
   const isFormValid =
@@ -29,7 +28,7 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
   const getFinnishFormattedDate = () => {
     const now = new Date();
     const day = String(now.getDate()).padStart(2, '0');
-    const month = String(now.getMonth() + 1).padStart(2, '0'); 
+    const month = String(now.getMonth() + 1).padStart(2, '0');
     const year = now.getFullYear();
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
@@ -56,27 +55,23 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
   };
 
   const updatePlayerStats = async (playerId, newRating, wins, losses) => {
-    if (!playerId) {
-      console.error('Player ID is undefined');
-      return;
-    }
+    if (!playerId) return;
     const playerRef = doc(db, 'users', playerId);
-
     try {
       const playerSnapshot = await getDoc(playerRef);
+      if (!playerSnapshot.exists()) return;
       const playerData = playerSnapshot.data();
       const adjustedRating = Math.round(newRating);
-
       const newMaxRating = Math.max(
         playerData.maxRating || adjustedRating,
         adjustedRating
       );
-
       await updateDoc(playerRef, {
         rating: adjustedRating,
         maxRating: newMaxRating,
         wins: wins,
         losses: losses,
+        totalMatches: wins + losses,
         rank: getRank(newMaxRating),
       });
     } catch (error) {
@@ -91,21 +86,14 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
     newWins,
     newLosses
   ) => {
-    if (!userId) {
-      console.error('User ID is undefined');
-      return;
-    }
+    if (!userId) return;
     const roomRef = doc(db, 'rooms', roomId);
     try {
       const roomDoc = await getDoc(roomRef);
-      if (!roomDoc.exists()) {
-        console.error(`Room ${roomId} not found!`);
-        return;
-      }
+      if (!roomDoc.exists()) return;
       const roomData = roomDoc.data();
       const timestamp = getFinnishFormattedDate();
-
-      const updatedMembers = roomData.members.map((member) => {
+      const updatedMembers = (roomData.members || []).map((member) => {
         if (member.userId === userId) {
           return {
             ...member,
@@ -126,8 +114,8 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
   const fetchPlayers = async () => {
     const querySnapshot = await getDocs(collection(db, 'users'));
     const playerList = [];
-    querySnapshot.forEach((doc) => {
-      playerList.push({ id: doc.id, ...doc.data() });
+    querySnapshot.forEach((docSnap) => {
+      playerList.push({ id: docSnap.id, ...docSnap.data() });
     });
     setPlayers(playerList);
   };
@@ -135,7 +123,6 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
     if (!isFormValid) {
       Store.addNotification({
         title: 'Error',
@@ -150,7 +137,6 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
       setLoading(false);
       return;
     }
-
     try {
       for (const match of matches) {
         const { score1, score2 } = match;
@@ -158,10 +144,8 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
         const score2Value = parseInt(score2);
         const timestamp = getFinnishFormattedDate();
         const winner = score1Value > score2Value ? player1 : player2;
-
-        const player1Doc = players.find((player) => player.name === player1);
-        const player2Doc = players.find((player) => player.name === player2);
-
+        const player1Doc = players.find((p) => p.name === player1);
+        const player2Doc = players.find((p) => p.name === player2);
         if (!player1Doc || !player2Doc) {
           Store.addNotification({
             title: 'Error',
@@ -175,22 +159,22 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
           });
           return;
         }
-
         const player1Ref = doc(db, 'users', player1Doc.userId);
         const player2Ref = doc(db, 'users', player2Doc.userId);
-        const player1Snapshot = await getDoc(player1Ref);
-        const player2Snapshot = await getDoc(player2Ref);
-
-        const player1OverallRating = player1Snapshot.data().rating || 1000;
-        const player2OverallRating = player2Snapshot.data().rating || 1000;
-        const player1OverallWins = player1Snapshot.data().wins || 0;
-        const player1OverallLosses = player1Snapshot.data().losses || 0;
-        const player2OverallWins = player2Snapshot.data().wins || 0;
-        const player2OverallLosses = player2Snapshot.data().losses || 0;
-
+        const [player1Snapshot, player2Snapshot] = await Promise.all([
+          getDoc(player1Ref),
+          getDoc(player2Ref),
+        ]);
+        const player1Data = player1Snapshot.data() || {};
+        const player2Data = player2Snapshot.data() || {};
+        const player1OverallRating = player1Data.rating || 1000;
+        const player2OverallRating = player2Data.rating || 1000;
+        const player1OverallWins = player1Data.wins || 0;
+        const player1OverallLosses = player1Data.losses || 0;
+        const player2OverallWins = player2Data.wins || 0;
+        const player2OverallLosses = player2Data.losses || 0;
         const player1Score = winner === player1 ? 1 : 0;
         const player2Score = winner === player2 ? 1 : 0;
-
         const newPlayer1Rating = calculateElo(
           player1OverallRating,
           player2OverallRating,
@@ -201,39 +185,8 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
           player1OverallRating,
           player2Score
         );
-
-        const matchData = {
-          player1Id: player1Doc.userId,
-          player2Id: player2Doc.userId,
-          players: [player1Doc.userId, player2Doc.userId],
-          player1: {
-            name: player1Doc.name,
-            scores: score1Value,
-            addedPoints: newPlayer1Rating - player1OverallRating,
-            oldRating: player1OverallRating,
-            newRating: newPlayer1Rating,
-          },
-          player2: {
-            name: player2Doc.name,
-            scores: score2Value,
-            addedPoints: newPlayer2Rating - player2OverallRating,
-            oldRating: player2OverallRating,
-            newRating: newPlayer2Rating,
-          },
-          timestamp: timestamp,
-          roomId: roomId,
-          winner: winner,
-        };
-
-        await addDoc(collection(db, 'matches'), matchData);
-
         const player1EarnedPoints = newPlayer1Rating - player1OverallRating;
         const player2EarnedPoints = newPlayer2Rating - player2OverallRating;
-
-        const newOverallPlayer1Rating =
-          player1OverallRating + player1EarnedPoints;
-        const newOverallPlayer2Rating =
-          player2OverallRating + player2EarnedPoints;
         const newPlayer1OverallWins =
           winner === player1 ? player1OverallWins + 1 : player1OverallWins;
         const newPlayer1OverallLosses =
@@ -242,42 +195,26 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
           winner === player2 ? player2OverallWins + 1 : player2OverallWins;
         const newPlayer2OverallLosses =
           winner === player2 ? player2OverallLosses : player2OverallLosses + 1;
-
-        await updatePlayerStats(
-          player1Doc.userId,
-          newOverallPlayer1Rating,
-          newPlayer1OverallWins,
-          newPlayer1OverallLosses
-        );
-        await updatePlayerStats(
-          player2Doc.userId,
-          newOverallPlayer2Rating,
-          newPlayer2OverallWins,
-          newPlayer2OverallLosses
-        );
-
-        const roomDoc = await getDoc(doc(db, 'rooms', roomId));
-        if (!roomDoc.exists()) {
+        const roomSnap = await getDoc(doc(db, 'rooms', roomId));
+        if (!roomSnap.exists()) {
           console.error(`Room ${roomId} not found!`);
           return;
         }
-        const roomData = roomDoc.data();
+        const roomData = roomSnap.data() || {};
         const player1RoomData =
-          roomData.members.find(
-            (member) => member.userId === player1Doc.userId
+          (roomData.members || []).find(
+            (m) => m.userId === player1Doc.userId
           ) || {};
         const player2RoomData =
-          roomData.members.find(
-            (member) => member.userId === player2Doc.userId
+          (roomData.members || []).find(
+            (m) => m.userId === player2Doc.userId
           ) || {};
-
-        const newRoomPlayer1Rating = player1RoomData.rating
-          ? player1RoomData.rating + player1EarnedPoints
-          : player1EarnedPoints;
-        const newRoomPlayer2Rating = player2RoomData.rating
-          ? player2RoomData.rating + player2EarnedPoints
-          : player2EarnedPoints;
-
+        const player1RoomOldRating = player1RoomData.rating ?? 1000;
+        const player2RoomOldRating = player2RoomData.rating ?? 1000;
+        const newRoomPlayer1Rating = player1RoomOldRating + player1EarnedPoints;
+        const newRoomPlayer2Rating = player2RoomOldRating + player2EarnedPoints;
+        const p1RoomAddedPoints = newRoomPlayer1Rating - player1RoomOldRating;
+        const p2RoomAddedPoints = newRoomPlayer2Rating - player2RoomOldRating;
         const newPlayer1RoomWins =
           winner === player1
             ? (player1RoomData.wins || 0) + 1
@@ -294,7 +231,47 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
           winner === player2
             ? player2RoomData.losses || 0
             : (player2RoomData.losses || 0) + 1;
-
+        const matchData = {
+          player1Id: player1Doc.userId,
+          player2Id: player2Doc.userId,
+          players: [player1Doc.userId, player2Doc.userId],
+          player1: {
+            name: player1Doc.name,
+            scores: score1Value,
+            oldRating: player1OverallRating,
+            newRating: newPlayer1Rating,
+            addedPoints: player1EarnedPoints,
+            roomOldRating: player1RoomOldRating,
+            roomNewRating: newRoomPlayer1Rating,
+            roomAddedPoints: p1RoomAddedPoints,
+          },
+          player2: {
+            name: player2Doc.name,
+            scores: score2Value,
+            oldRating: player2OverallRating,
+            newRating: newPlayer2Rating,
+            addedPoints: player2EarnedPoints,
+            roomOldRating: player2RoomOldRating,
+            roomNewRating: newRoomPlayer2Rating,
+            roomAddedPoints: p2RoomAddedPoints,
+          },
+          timestamp,
+          roomId,
+          winner,
+        };
+        await addDoc(collection(db, 'matches'), matchData);
+        await updatePlayerStats(
+          player1Doc.userId,
+          player1OverallRating + player1EarnedPoints,
+          newPlayer1OverallWins,
+          newPlayer1OverallLosses
+        );
+        await updatePlayerStats(
+          player2Doc.userId,
+          player2OverallRating + player2EarnedPoints,
+          newPlayer2OverallWins,
+          newPlayer2OverallLosses
+        );
         await updateRoomMemberStats(
           roomId,
           player1Doc.userId,
@@ -310,11 +287,9 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
           newPlayer2RoomLosses
         );
       }
-
       setPlayer1('');
       setPlayer2('');
       setMatches([{ score1: '', score2: '' }]);
-
       await fetchPlayers();
       updatePlayerList();
       onMatchAdded();
@@ -339,7 +314,6 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
       <h2 className='text-2xl font-bold font-outfit text-center mb-6'>
         Add Match
       </h2>
-
       <form onSubmit={handleSubmit} className='space-y-6'>
         <div className='grid grid-cols-2 gap-4 mb-4'>
           <div>
@@ -357,15 +331,14 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
             >
               <option value=''>Select Player 1</option>
               {players
-                .filter((player) => player.name !== player2)
-                .map((player) => (
-                  <option key={player.userId} value={player.name}>
-                    {player.name}
+                .filter((p) => p.name !== player2)
+                .map((p) => (
+                  <option key={p.userId} value={p.name}>
+                    {p.name}
                   </option>
                 ))}
             </select>
           </div>
-
           <div>
             <label
               className='block text-sm font-semibold mb-2'
@@ -381,50 +354,47 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
             >
               <option value=''>Select Player 2</option>
               {players
-                .filter((player) => player.name !== player1)
-                .map((player) => (
-                  <option key={player.userId} value={player.name}>
-                    {player.name}
+                .filter((p) => p.name !== player1)
+                .map((p) => (
+                  <option key={p.userId} value={p.name}>
+                    {p.name}
                   </option>
                 ))}
             </select>
           </div>
         </div>
-
-        {matches.map((match, index) => (
+        {matches.map((m, index) => (
           <div key={index} className='grid grid-cols-2 gap-4 mb-4 relative'>
             <div>
               <input
                 type='number'
                 className='w-full bg-gray-100 text-black px-4 py-2 border border-gray-300 rounded-md'
-                value={match.score1}
+                value={m.score1}
                 onChange={(e) =>
                   setMatches(
-                    matches.map((m, i) =>
-                      i === index ? { ...m, score1: e.target.value } : m
+                    matches.map((item, i) =>
+                      i === index ? { ...item, score1: e.target.value } : item
                     )
                   )
                 }
                 placeholder={`Player 1 Score ${index + 1}`}
               />
             </div>
-
             <div>
               <input
                 type='number'
                 className='w-full bg-gray-100 text-black px-4 py-2 border border-gray-300 rounded-md'
-                value={match.score2}
+                value={m.score2}
                 onChange={(e) =>
                   setMatches(
-                    matches.map((m, i) =>
-                      i === index ? { ...m, score2: e.target.value } : m
+                    matches.map((item, i) =>
+                      i === index ? { ...item, score2: e.target.value } : item
                     )
                   )
                 }
                 placeholder={`Player 2 Score ${index + 1}`}
               />
             </div>
-
             {index > 0 && (
               <button
                 type='button'
@@ -436,7 +406,6 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
             )}
           </div>
         ))}
-
         <button
           type='button'
           className='w-full md:w-auto bg-blue-500 text-white font-semibold py-2 px-6 rounded-md hover:bg-blue-600 transition-colors duration-200'
@@ -444,7 +413,6 @@ const MatchForm = ({ updatePlayerList, roomId, playersList, onMatchAdded }) => {
         >
           + Add another match
         </button>
-
         <div className='flex justify-center mt-8'>
           <button
             type='submit'
