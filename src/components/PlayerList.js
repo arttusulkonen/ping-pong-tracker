@@ -27,7 +27,7 @@ const PlayerList = ({ players, loading, userRole, roomId }) => {
 
   const finishSeason = async () => {
     try {
-      const roomRef = doc(db, roomId);
+      const roomRef = doc(db, 'rooms', roomId);
       const roomSnap = await getDoc(roomRef);
       if (!roomSnap.exists()) {
         console.error(`Room with ID ${roomId} not found.`);

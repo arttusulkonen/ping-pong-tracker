@@ -30,6 +30,9 @@ const Room = () => {
   const [selectedUsers, setSelectedUsers] = useState([]);
   const dropdownRef = useRef(null);
 
+  // New state to check if the season is finished:
+  const [seasonEnded, setSeasonEnded] = useState(false);
+
   useEffect(() => {
     const fetchUsers = async () => {
       const usersCollection = await getDocs(collection(db, 'users'));
@@ -82,9 +85,9 @@ const Room = () => {
     const updatedMembers = [...room.members];
 
     for (const userId of selectedUsers) {
-      const userDoc = await getDoc(doc(db, 'users', userId));
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
+      const userDocSnap = await getDoc(doc(db, 'users', userId));
+      if (userDocSnap.exists()) {
+        const userData = userDocSnap.data();
         const isAlreadyMember = updatedMembers.some(
           (member) => member.userId === userId
         );
@@ -132,14 +135,13 @@ const Room = () => {
 
   const updatePlayerList = async () => {
     const roomDoc = await getDoc(doc(db, 'rooms', roomId));
-  
     if (roomDoc.exists()) {
       const roomData = roomDoc.data();
       const playerPromises = roomData.members.map(async (member) => {
-        const userDoc = await getDoc(doc(db, 'users', member.userId));
-        const userData = userDoc.data();
+        const userDocSnap = await getDoc(doc(db, 'users', member.userId));
+        const userData = userDocSnap.data();
         return {
-          userId: userDoc.id,
+          userId: userDocSnap.id,
           ...userData,
           rating: member.rating,
           wins: member.wins,
@@ -152,48 +154,50 @@ const Room = () => {
       setMembers(playerList);
     }
   };
-  
 
   const refreshMatches = () => {
     setUpdateMatches((prev) => !prev);
   };
 
-  const toggleDropdown = () => {
-    setIsDropdownOpen(!isDropdownOpen);
-  };
-
   useEffect(() => {
     const fetchRoomData = async () => {
-      const roomDoc = await getDoc(doc(db, 'rooms', roomId));
-    if (roomDoc.exists()) {
-      const data = roomDoc.data();
-      setRoom(data);
-      setMembers(data.members || []);
-      const currentUser = auth.currentUser;
+      const roomDocSnap = await getDoc(doc(db, 'rooms', roomId));
+      if (roomDocSnap.exists()) {
+        const data = roomDocSnap.data();
+        setRoom(data);
+        setMembers(data.members || []);
 
-      const usersCollection = await getDocs(collection(db, 'users'));
-      const allUsers = usersCollection.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+        // Check if the season is finished (e.g., seasonHistory has entries)
+        if (data.seasonHistory && data.seasonHistory.length > 0) {
+          setSeasonEnded(true);
+        } else {
+          setSeasonEnded(false);
+        }
 
-      const membersWithTotalRating = data.members.map((member) => {
-        const user = allUsers.find((user) => user.id === member.userId);
-        return {
-          ...member,
-          totalRating: user ? user.rating : 0,
-          maxRating: user ? user.maxRating || user.rating : 0,
-        };
-      });
+        const currentUser = auth.currentUser;
 
-      setMembers(membersWithTotalRating);
+        const usersCollection = await getDocs(collection(db, 'users'));
+        const allUsers = usersCollection.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+
+        const membersWithTotalRating = data.members.map((member) => {
+          const foundUser = allUsers.find((usr) => usr.id === member.userId);
+          return {
+            ...member,
+            totalRating: foundUser ? foundUser.rating : 0,
+            maxRating: foundUser ? foundUser.maxRating || foundUser.rating : 0,
+          };
+        });
+        setMembers(membersWithTotalRating);
 
         if (currentUser) {
           if (data.creator === currentUser.uid) {
             setUserRole('admin');
           } else {
             const member = data.members.find(
-              (member) => member.userId === currentUser.uid
+              (m) => m.userId === currentUser.uid
             );
             if (member) {
               setUserRole(member.role);
@@ -225,8 +229,8 @@ const Room = () => {
       return;
     }
 
-    const userDoc = doc(db, 'users', auth.currentUser.uid);
-    const userDocSnap = await getDoc(userDoc);
+    const userDocRef = doc(db, 'users', auth.currentUser.uid);
+    const userDocSnap = await getDoc(userDocRef);
     const userData = userDocSnap.data();
     const updatedMembers = [
       ...members,
@@ -239,8 +243,9 @@ const Room = () => {
       },
     ];
     await updateDoc(doc(db, 'rooms', roomId), { members: updatedMembers });
-    await updateDoc(userDoc, { rooms: arrayUnion(roomId) });
+    await updateDoc(userDocRef, { rooms: arrayUnion(roomId) });
     setMembers(updatedMembers);
+
     Store.addNotification({
       title: 'Joined Room',
       message: 'You have successfully joined the room.',
@@ -262,6 +267,7 @@ const Room = () => {
       rooms: arrayUnion(roomId),
     });
     setMembers(updatedMembers);
+
     Store.addNotification({
       title: 'Left Room',
       message: 'You have successfully left the room.',
@@ -272,6 +278,10 @@ const Room = () => {
       animationOut: ['animate__animated', 'animate__fadeOut'],
       dismiss: { duration: 3000, onScreen: true },
     });
+  };
+
+  const toggleDropdown = () => {
+    setIsDropdownOpen(!isDropdownOpen);
   };
 
   return (
@@ -313,9 +323,7 @@ const Room = () => {
                         onChange={() => handleSelectUser(user.id)}
                         className='form-checkbox h-5 w-5 text-blue-600 transition duration-150 ease-in-out mr-3'
                       />
-                      <span className='text-sm font-medium'>
-                        {user.name}
-                      </span>
+                      <span className='text-sm font-medium'>{user.name}</span>
                     </div>
                   ))}
                 </div>
@@ -346,7 +354,7 @@ const Room = () => {
             ) && (
               <button
                 onClick={handleJoinRoom}
-                className='w-full bg-blue-500 text-white font-semibold py-2 px-6 rounded-md hover:bg-blue-600 transition-colors duration-200 border-b-4 border-r-4 border-black active:border-b-0 active:border-r-0 active-border-t-4 active-border-l-4'
+                className='w-full bg-blue-500 text-white font-semibold py-2 px-6 rounded-md hover:bg-blue-600 transition-colors duration-200 border-b-4 border-r-4 border-black active:border-b-0 active:border-r-0 active:border-t-4 active:border-l-4'
               >
                 Join Room
               </button>
@@ -359,7 +367,7 @@ const Room = () => {
             ) && (
               <button
                 onClick={handleLeaveRoom}
-                className='w-full bg-red-500 text-white font-semibold py-2 px-6 rounded-md hover:bg-red-600 transition-colors duration-200 border-b-4 border-r-4 border-black active:border-b-0 active-border-r-0 active-border-t-4 active-border-l-4'
+                className='w-full bg-red-500 text-white font-semibold py-2 px-6 rounded-md hover:bg-red-600 transition-colors duration-200 border-b-4 border-r-4 border-black active:border-b-0 active:border-r-0 active:border-t-4 active:border-l-4'
               >
                 Leave Room
               </button>
@@ -367,15 +375,32 @@ const Room = () => {
         </div>
       </div>
 
-      {(userRole === 'admin' || userRole === 'editor' || userRole === 'viewer') && (
-        <MatchForm
-          roomId={roomId}
-          updatePlayerList={updatePlayerList}
-          playersList={members}
-          onMatchAdded={refreshMatches}
-        />
+      {/* Show MatchForm only if season is not ended */}
+      {(userRole === 'admin' ||
+        userRole === 'editor' ||
+        userRole === 'viewer') &&
+        !seasonEnded && (
+          <MatchForm
+            roomId={roomId}
+            updatePlayerList={updatePlayerList}
+            playersList={members}
+            onMatchAdded={refreshMatches}
+          />
+        )}
+
+      {/* Show this notice if the season is ended */}
+      {seasonEnded && (
+        <div className='bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mt-4'>
+          <p className='font-bold mb-2'>Season Finished</p>
+          <p>
+            The season in this room is finished. If you want to start a new
+            season, please create a new room. You can check the season's
+            statistics in the Final Table above.
+          </p>
+        </div>
       )}
 
+      {/* Show the last matches list regardless of season status */}
       {user && <LastMatches roomId={roomId} updateMatches={updateMatches} />}
     </div>
   );
