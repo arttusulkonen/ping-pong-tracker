@@ -57,7 +57,9 @@ const Player = ({ onNameUpdate }) => {
   const [opponentsList, setOpponentsList] = useState([]);
   const [filteredMatches, setFilteredMatches] = useState([]);
   const [opponentStats, setOpponentStats] = useState(null);
+  const [sideStats, setSideStats] = useState(null); // Добавили стейт для статистики по сторонам
 
+  // Функция вычисления ранга
   const getRank = (rating) => {
     if (rating < 1001) return 'Ping Pong Padawan';
     if (rating < 1100) return 'Table Tennis Trainee';
@@ -68,6 +70,7 @@ const Player = ({ onNameUpdate }) => {
     return 'Ping Pong Paladin';
   };
 
+  // Возвращает HTML-код медали
   const getMedal = (rank) => {
     switch (rank) {
       case 'Ping Pong Padawan':
@@ -89,6 +92,7 @@ const Player = ({ onNameUpdate }) => {
     }
   };
 
+  // Выводит легенду по всем званиям (rank)
   const getAllRankExplanations = () => {
     return `
       <div class="tooltip-content font-outfit p-2 text-base">
@@ -103,10 +107,12 @@ const Player = ({ onNameUpdate }) => {
     `;
   };
 
+  // Включаем/выключаем режим редактирования имени
   const handleEditClick = () => {
     setDisplayInput(!displayInput);
   };
 
+  // Сохраняем новое имя пользователя
   const handleSaveName = async (e) => {
     e.preventDefault();
     if (!player.name.trim()) {
@@ -129,6 +135,8 @@ const Player = ({ onNameUpdate }) => {
       const usersCollection = collection(db, 'users');
       const usersSnapshot = await getDocs(usersCollection);
       let isNicknameTaken = false;
+
+      // Проверяем, не занято ли новое имя
       usersSnapshot.forEach((docSnap) => {
         if (
           docSnap.data().name.toLowerCase() === player.name.toLowerCase() &&
@@ -140,10 +148,14 @@ const Player = ({ onNameUpdate }) => {
       if (isNicknameTaken) {
         throw new Error('4');
       }
+
+      // Сохраняем в Firestore (коллекция users)
       await setDoc(doc(db, 'users', userId), {
         ...player,
         name: player.name,
       });
+
+      // Обновляем это имя в коллекции rooms (в массиве members)
       const roomsCollection = collection(db, 'rooms');
       const roomsSnapshot = await getDocs(roomsCollection);
       for (const roomDoc of roomsSnapshot.docs) {
@@ -156,11 +168,14 @@ const Player = ({ onNameUpdate }) => {
           members: updatedMembers,
         });
       }
+
+      // Обновляем имя в коллекции matches (player1 / player2)
       const matchesCollection = collection(db, 'matches');
       const matchesSnapshot = await getDocs(matchesCollection);
       for (const matchDoc of matchesSnapshot.docs) {
         const matchData = matchDoc.data();
         let updatedMatch = { ...matchData };
+
         if (matchData.player1Id === userId) {
           updatedMatch = {
             ...matchData,
@@ -175,6 +190,7 @@ const Player = ({ onNameUpdate }) => {
         }
         await setDoc(doc(db, 'matches', matchDoc.id), updatedMatch);
       }
+
       onNameUpdate(player.name);
       Store.addNotification({
         title: 'Success',
@@ -211,6 +227,7 @@ const Player = ({ onNameUpdate }) => {
     }
   };
 
+  // Подтягиваем данные игрока
   const fetchPlayer = useCallback(async () => {
     try {
       const playerRef = doc(db, 'users', userId);
@@ -232,6 +249,7 @@ const Player = ({ onNameUpdate }) => {
     }
   }, [userId]);
 
+  // Подтягиваем все матчи, где игрок участвует (players array-contains userId)
   const fetchMatches = useCallback(async () => {
     try {
       const matchesCollection = collection(db, 'matches');
@@ -241,6 +259,8 @@ const Player = ({ onNameUpdate }) => {
       );
       const matchesSnapshot = await getDocs(q);
       const matchesData = matchesSnapshot.docs.map((docSnap) => docSnap.data());
+
+      // Сортируем по дате
       const sortedMatches = matchesData.sort((a, b) => {
         const [dA, mA, yA, hA, minA, sA] = a.timestamp.split(/[\s.:]/);
         const [dB, mB, yB, hB, minB, sB] = b.timestamp.split(/[\s.:]/);
@@ -248,6 +268,8 @@ const Player = ({ onNameUpdate }) => {
         const dateB = new Date(yB, mB - 1, dB, hB, minB, sB);
         return dateA - dateB;
       });
+
+      // Формируем список оппонентов
       const opponentsSet = new Set();
       matchesData.forEach((match) => {
         const opponentId =
@@ -261,6 +283,7 @@ const Player = ({ onNameUpdate }) => {
       const opponents = Array.from(opponentsSet).map((item) =>
         JSON.parse(item)
       );
+
       setOpponentsList(opponents);
       setMatches(sortedMatches);
       setFilteredMatches(sortedMatches);
@@ -271,6 +294,7 @@ const Player = ({ onNameUpdate }) => {
     }
   }, [userId]);
 
+  // Смена выбранного оппонента
   const handleOpponentChange = (e) => {
     const opponentId = e.target.value;
     setSelectedOpponent(opponentId);
@@ -291,12 +315,15 @@ const Player = ({ onNameUpdate }) => {
     }
   }, [userId, fetchPlayer, fetchMatches]);
 
+  // Подсчитываем текущую победную серию и максимальную победную серию
   useEffect(() => {
     const calculateWinStreaks = () => {
       let localMaxWinStreak = 0;
       let localCurrentWinStreak = 0;
       let tempCurrentWinStreak = 0;
       const reversedMatches = [...matches].reverse();
+
+      // Подсчёт текущего вин-стрила (с конца)
       for (let match of reversedMatches) {
         const isWinner =
           (match.player1Id === userId && match.winner === match.player1.name) ||
@@ -308,6 +335,8 @@ const Player = ({ onNameUpdate }) => {
         }
       }
       localCurrentWinStreak = tempCurrentWinStreak;
+
+      // Подсчёт максимального вин-стрика
       let tempMaxWinStreak = 0;
       for (let match of matches) {
         const isWinner =
@@ -325,11 +354,13 @@ const Player = ({ onNameUpdate }) => {
       setMaxWinStreak(localMaxWinStreak);
       setCurrentWinStreak(localCurrentWinStreak);
     };
+
     if (matches.length > 0) {
       calculateWinStreaks();
     }
   }, [matches, userId]);
 
+  // Функция для расчёта общей статистики (wins, losses и т.д.)
   const calculateStats = useCallback(
     (someMatches) => {
       if (!someMatches || someMatches.length === 0) {
@@ -343,13 +374,18 @@ const Player = ({ onNameUpdate }) => {
       let maxWS = 0;
       let currentLS = 0;
       let maxLS = 0;
+
+      // Сортируем по дате для упорядоченного расчёта
       const sorted = [...someMatches].sort(
         (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
       );
+
+      // Бегаем по матчам
       sorted.forEach((match) => {
         const isWinner =
           (match.player1Id === userId && match.winner === match.player1.name) ||
           (match.player2Id === userId && match.winner === match.player2.name);
+
         const playerScore =
           match.player1Id === userId
             ? match.player1.scores
@@ -358,7 +394,9 @@ const Player = ({ onNameUpdate }) => {
           match.player1Id === userId
             ? match.player2.scores
             : match.player1.scores;
+
         const scoreMargin = playerScore - opponentScore;
+
         if (isWinner) {
           wins++;
           currentWS++;
@@ -381,6 +419,8 @@ const Player = ({ onNameUpdate }) => {
           }
         }
       });
+
+      // Подсчитываем набранные и пропущенные очки
       const gainedScores = sorted.reduce((acc, match) => {
         if (match.player1Id === userId) {
           return acc + match.player1.scores;
@@ -395,6 +435,7 @@ const Player = ({ onNameUpdate }) => {
           return acc + match.player1.scores;
         }
       }, 0);
+
       return {
         totalMatches: wins + losses,
         wins,
@@ -410,15 +451,65 @@ const Player = ({ onNameUpdate }) => {
     [userId]
   );
 
+  // Считаем статистику по сторонам (левая/правая) - победы/поражения
+  const calculateSideStats = (allMatches, currentUserId) => {
+    let leftSideWins = 0;
+    let leftSideLosses = 0;
+    let rightSideWins = 0;
+    let rightSideLosses = 0;
+
+    allMatches.forEach((match) => {
+      const isPlayer1 = match.player1Id === currentUserId;
+      const playerSide = isPlayer1
+        ? match.player1.side
+        : match.player2.side;
+      const playerName = isPlayer1
+        ? match.player1.name
+        : match.player2.name;
+
+      const userIsWinner = match.winner === playerName;
+
+      // Если игрок указывал 'left' как сторону
+      if (playerSide === 'left') {
+        if (userIsWinner) {
+          leftSideWins++;
+        } else {
+          leftSideLosses++;
+        }
+      } else if (playerSide === 'right') {
+        if (userIsWinner) {
+          rightSideWins++;
+        } else {
+          rightSideLosses++;
+        }
+      }
+    });
+
+    return {
+      leftSideWins,
+      leftSideLosses,
+      rightSideWins,
+      rightSideLosses,
+    };
+  };
+
+  // При смене оппонента пересчитываем общую статистику + статистику по сторонам
   useEffect(() => {
     if (!filteredMatches.length) {
       setOpponentStats(null);
+      setSideStats(null);
       return;
     }
     if (selectedOpponent === '') {
+      // Все матчи
       const overallStats = calculateStats(filteredMatches);
       setOpponentStats(overallStats);
+
+      // Также считаем статистику по сторонам для всех матчей
+      const sideData = calculateSideStats(filteredMatches, userId);
+      setSideStats(sideData);
     } else {
+      // Фильтруем матчи конкретно по выбранному оппоненту
       const specificMatches = filteredMatches.filter((match) => {
         return (
           match.player1Id === selectedOpponent ||
@@ -427,6 +518,10 @@ const Player = ({ onNameUpdate }) => {
       });
       const stats = calculateStats(specificMatches);
       setOpponentStats(stats);
+
+      // Также считаем статистику по сторонам для этих конкретных матчей
+      const sideData = calculateSideStats(specificMatches, userId);
+      setSideStats(sideData);
     }
   }, [selectedOpponent, filteredMatches, userId, calculateStats]);
 
@@ -437,6 +532,7 @@ const Player = ({ onNameUpdate }) => {
   const rank = player ? getRank(player.maxRating || player.rating) : '';
   const rankExplanations = getAllRankExplanations();
 
+  // Данные для графика «Матч/победа/проигрыш»
   const getChartData = () => {
     if (!opponentStats || !filteredMatches.length) return null;
     const sorted = [...filteredMatches].sort(
@@ -444,6 +540,7 @@ const Player = ({ onNameUpdate }) => {
     );
     const dates = [];
     const results = [];
+
     sorted.forEach((match) => {
       const isWinner =
         (match.player1Id === userId && match.winner === match.player1.name) ||
@@ -451,6 +548,7 @@ const Player = ({ onNameUpdate }) => {
       dates.push(match.timestamp.split(' ')[0]);
       results.push(isWinner ? 1 : -1);
     });
+
     return {
       labels: dates,
       datasets: [
@@ -466,6 +564,7 @@ const Player = ({ onNameUpdate }) => {
     };
   };
 
+  // График «Разница в счёте»
   const getScoreDifferenceData = () => {
     if (!opponentStats || !filteredMatches.length) return null;
     const sorted = [...filteredMatches].sort(
@@ -473,6 +572,7 @@ const Player = ({ onNameUpdate }) => {
     );
     const dates = [];
     const differences = [];
+
     sorted.forEach((match) => {
       const playerScore =
         match.player1Id === userId
@@ -485,6 +585,7 @@ const Player = ({ onNameUpdate }) => {
       dates.push(match.timestamp.split(' ')[0]);
       differences.push(playerScore - opponentScore);
     });
+
     return {
       labels: dates,
       datasets: [
@@ -500,6 +601,7 @@ const Player = ({ onNameUpdate }) => {
     };
   };
 
+  // График «Рейтинг во времени»
   const getRatingData = () => {
     if (!opponentStats || !filteredMatches.length) return null;
     const sorted = [...filteredMatches].sort(
@@ -507,6 +609,7 @@ const Player = ({ onNameUpdate }) => {
     );
     const dates = [];
     const ratings = [];
+
     sorted.forEach((match) => {
       const rating =
         match.player1Id === userId
@@ -515,6 +618,7 @@ const Player = ({ onNameUpdate }) => {
       dates.push(match.timestamp.split(' ')[0]);
       ratings.push(rating);
     });
+
     return {
       labels: dates,
       datasets: [
@@ -530,6 +634,7 @@ const Player = ({ onNameUpdate }) => {
     };
   };
 
+  // Определяем, какой участок графика показывать (по умолчанию последние 30%)
   const calculateVisibleRange = (dataLength) => {
     const visibleStart = Math.floor(dataLength * 0.7);
     const visibleEnd = dataLength - 1;
@@ -606,7 +711,9 @@ const Player = ({ onNameUpdate }) => {
                 <p className='text-gray-700'>
                   <strong>Win Rate:</strong>{' '}
                   {player.totalMatches
-                    ? `${((player.wins / player.totalMatches) * 100).toFixed(2)}%`
+                    ? `${((player.wins / player.totalMatches) * 100).toFixed(
+                        2
+                      )}%`
                     : '0%'}
                 </p>
                 <p className='text-gray-700'>
@@ -649,9 +756,8 @@ const Player = ({ onNameUpdate }) => {
           />
         </div>
       </div>
-      <h2 className='text-2xl font-outfit font-bold mb-4'>
-        Filter by Opponent
-      </h2>
+
+      <h2 className='text-2xl font-outfit font-bold mb-4'>Filter by Opponent</h2>
       <select
         className='w-full md:w-1/2 bg-gray-100 text-black px-4 py-2 border border-gray-300 rounded-md mb-4'
         value={selectedOpponent}
@@ -664,6 +770,8 @@ const Player = ({ onNameUpdate }) => {
           </option>
         ))}
       </select>
+
+      {/* Блок с общей статистикой (или статистикой по выбранному оппоненту) */}
       {opponentStats && (
         <>
           <div className='bg-white shadow rounded-lg p-2 mt-4 mb-4'>
@@ -689,7 +797,10 @@ const Player = ({ onNameUpdate }) => {
             <p className='text-gray-700'>
               <strong>Win Percentage:</strong>{' '}
               {opponentStats.totalMatches
-                ? `${((opponentStats.wins / opponentStats.totalMatches) * 100).toFixed(2)}%`
+                ? `${(
+                    (opponentStats.wins / opponentStats.totalMatches) *
+                    100
+                  ).toFixed(2)}%`
                 : '0%'}
             </p>
             <p className='text-gray-700'>
@@ -718,7 +829,30 @@ const Player = ({ onNameUpdate }) => {
               {opponentStats.maxLossStreak}
             </p>
           </div>
-          <div className=''>
+
+          {/* Блок для статистики по сторонам стола */}
+          {sideStats && (
+            <div className='bg-white shadow rounded-lg p-2 mt-4 mb-4'>
+              <h3 className='text-xl font-outfit font-bold mb-4 text-gray-700'>
+                Side Statistics
+              </h3>
+              <p className='text-gray-700'>
+                <strong>Left Side Wins:</strong> {sideStats.leftSideWins}
+              </p>
+              <p className='text-gray-700'>
+                <strong>Left Side Losses:</strong> {sideStats.leftSideLosses}
+              </p>
+              <p className='text-gray-700'>
+                <strong>Right Side Wins:</strong> {sideStats.rightSideWins}
+              </p>
+              <p className='text-gray-700'>
+                <strong>Right Side Losses:</strong> {sideStats.rightSideLosses}
+              </p>
+            </div>
+          )}
+
+          {/* Графики */}
+          <div>
             {filteredMatches.length > 0 && (
               <div className='bg-white shadow rounded-lg p-2 mt-4 mb-4'>
                 <h3 className='text-xl font-outfit font-bold mb-4 text-gray-700'>
@@ -735,8 +869,7 @@ const Player = ({ onNameUpdate }) => {
                           label: (tooltipItem) => {
                             const matchIndex = tooltipItem.dataIndex;
                             const sorted = [...filteredMatches].sort(
-                              (a, b) =>
-                                new Date(a.timestamp) - new Date(b.timestamp)
+                              (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
                             );
                             const match = sorted[matchIndex];
                             return `Match Date: ${match.timestamp}`;
@@ -777,6 +910,7 @@ const Player = ({ onNameUpdate }) => {
                 />
               </div>
             )}
+
             {filteredMatches.length > 0 && (
               <div className='bg-white shadow rounded-lg p-2 mt-4 mb-4'>
                 <h3 className='text-xl font-outfit font-bold text-gray-700'>
@@ -793,8 +927,7 @@ const Player = ({ onNameUpdate }) => {
                           label: (tooltipItem) => {
                             const matchIndex = tooltipItem.dataIndex;
                             const sorted = [...filteredMatches].sort(
-                              (a, b) =>
-                                new Date(a.timestamp) - new Date(b.timestamp)
+                              (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
                             );
                             const match = sorted[matchIndex];
                             const playerScore =
@@ -851,6 +984,7 @@ const Player = ({ onNameUpdate }) => {
                 />
               </div>
             )}
+
             {filteredMatches.length > 0 && (
               <div className='bg-white shadow rounded-lg p-2 mt-4 mb-4'>
                 <h3 className='text-xl font-outfit font-bold mb-4 text-gray-700'>
@@ -867,8 +1001,7 @@ const Player = ({ onNameUpdate }) => {
                           label: (tooltipItem) => {
                             const matchIndex = tooltipItem.dataIndex;
                             const sorted = [...filteredMatches].sort(
-                              (a, b) =>
-                                new Date(a.timestamp) - new Date(b.timestamp)
+                              (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
                             );
                             const match = sorted[matchIndex];
                             const oldRating =
@@ -885,7 +1018,7 @@ const Player = ({ onNameUpdate }) => {
                               `New Rating: ${newRating}`,
                               `Change: ${
                                 ratingChange > 0
-                                  ? `+${ratingChange}`
+                                  ? '+' + ratingChange
                                   : ratingChange
                               }`,
                               `Date: ${match.timestamp}`,
@@ -930,6 +1063,8 @@ const Player = ({ onNameUpdate }) => {
           </div>
         </>
       )}
+
+      {/* Таблица последних матчей */}
       <h2 className='text-2xl font-outfit font-bold mb-4'>Last Matches</h2>
       <div className='overflow-x-auto max-h-96'>
         <table className='min-w-full bg-white shadow rounded-lg'>

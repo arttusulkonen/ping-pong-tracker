@@ -465,7 +465,7 @@ const PlayerList = ({ currentUserId, players, loading, userRole, roomId }) => {
           </div>
           <div className='-m-1.5 overflow-x-auto'>
             <div className='p-1.5 min-w-full inline-block align-middle'>
-              <div className='overflow-hidden shadow-md'>
+              <div className='overflow-hidden'>
                 <table className='min-w-full bg-white shadow text-black'>
                   <thead>
                     <tr>
@@ -627,7 +627,7 @@ const PlayerList = ({ currentUserId, players, loading, userRole, roomId }) => {
                       currentUserId === 'NoYtP49TLoUHOiNEcknW63cw2mw2' && (
                         <button
                           onClick={updateRoomMembers}
-                          className='bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 focus:outline-none mr-2'
+                          className='bg-blue-500 tex-white px-4 py-2 rounded hover:bg-blue-600 focus:outline-none mr-2'
                         >
                           Update Room Data
                         </button>
