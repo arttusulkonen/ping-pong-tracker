@@ -57,7 +57,7 @@ const Player = ({ onNameUpdate }) => {
   const [opponentsList, setOpponentsList] = useState([]);
   const [filteredMatches, setFilteredMatches] = useState([]);
   const [opponentStats, setOpponentStats] = useState(null);
-  const [sideStats, setSideStats] = useState(null); // Добавили стейт для статистики по сторонам
+  const [sideStats, setSideStats] = useState(null); // Статистика по сторонам
 
   // Функция вычисления ранга
   const getRank = (rating) => {
@@ -124,10 +124,7 @@ const Player = ({ onNameUpdate }) => {
         container: 'top-right',
         animationIn: ['animate__animated', 'animate__fadeIn'],
         animationOut: ['animate__animated', 'animate__fadeOut'],
-        dismiss: {
-          duration: 3000,
-          onScreen: true,
-        },
+        dismiss: { duration: 3000, onScreen: true },
       });
       return;
     }
@@ -155,7 +152,7 @@ const Player = ({ onNameUpdate }) => {
         name: player.name,
       });
 
-      // Обновляем это имя в коллекции rooms (в массиве members)
+      // Обновляем имя в коллекции rooms (в массиве members)
       const roomsCollection = collection(db, 'rooms');
       const roomsSnapshot = await getDocs(roomsCollection);
       for (const roomDoc of roomsSnapshot.docs) {
@@ -200,10 +197,7 @@ const Player = ({ onNameUpdate }) => {
         container: 'top-right',
         animationIn: ['animate__animated', 'animate__fadeIn'],
         animationOut: ['animate__animated', 'animate__fadeOut'],
-        dismiss: {
-          duration: 3000,
-          onScreen: true,
-        },
+        dismiss: { duration: 3000, onScreen: true },
       });
     } catch (err) {
       if (err.message === '4') {
@@ -215,10 +209,7 @@ const Player = ({ onNameUpdate }) => {
           container: 'top-right',
           animationIn: ['animate__animated', 'animate__fadeIn'],
           animationOut: ['animate__animated', 'animate__fadeOut'],
-          dismiss: {
-            duration: 3000,
-            onScreen: true,
-          },
+          dismiss: { duration: 3000, onScreen: true },
         });
       }
     } finally {
@@ -315,7 +306,7 @@ const Player = ({ onNameUpdate }) => {
     }
   }, [userId, fetchPlayer, fetchMatches]);
 
-  // Подсчитываем текущую победную серию и максимальную победную серию
+  // Подсчет текущей и максимальной победной серии
   useEffect(() => {
     const calculateWinStreaks = () => {
       let localMaxWinStreak = 0;
@@ -323,7 +314,6 @@ const Player = ({ onNameUpdate }) => {
       let tempCurrentWinStreak = 0;
       const reversedMatches = [...matches].reverse();
 
-      // Подсчёт текущего вин-стрила (с конца)
       for (let match of reversedMatches) {
         const isWinner =
           (match.player1Id === userId && match.winner === match.player1.name) ||
@@ -336,7 +326,6 @@ const Player = ({ onNameUpdate }) => {
       }
       localCurrentWinStreak = tempCurrentWinStreak;
 
-      // Подсчёт максимального вин-стрика
       let tempMaxWinStreak = 0;
       for (let match of matches) {
         const isWinner =
@@ -360,7 +349,7 @@ const Player = ({ onNameUpdate }) => {
     }
   }, [matches, userId]);
 
-  // Функция для расчёта общей статистики (wins, losses и т.д.)
+  // Функция для расчета общей статистики
   const calculateStats = useCallback(
     (someMatches) => {
       if (!someMatches || someMatches.length === 0) {
@@ -374,18 +363,13 @@ const Player = ({ onNameUpdate }) => {
       let maxWS = 0;
       let currentLS = 0;
       let maxLS = 0;
-
-      // Сортируем по дате для упорядоченного расчёта
       const sorted = [...someMatches].sort(
         (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
       );
-
-      // Бегаем по матчам
       sorted.forEach((match) => {
         const isWinner =
           (match.player1Id === userId && match.winner === match.player1.name) ||
           (match.player2Id === userId && match.winner === match.player2.name);
-
         const playerScore =
           match.player1Id === userId
             ? match.player1.scores
@@ -394,9 +378,7 @@ const Player = ({ onNameUpdate }) => {
           match.player1Id === userId
             ? match.player2.scores
             : match.player1.scores;
-
         const scoreMargin = playerScore - opponentScore;
-
         if (isWinner) {
           wins++;
           currentWS++;
@@ -419,8 +401,6 @@ const Player = ({ onNameUpdate }) => {
           }
         }
       });
-
-      // Подсчитываем набранные и пропущенные очки
       const gainedScores = sorted.reduce((acc, match) => {
         if (match.player1Id === userId) {
           return acc + match.player1.scores;
@@ -435,7 +415,6 @@ const Player = ({ onNameUpdate }) => {
           return acc + match.player1.scores;
         }
       }, 0);
-
       return {
         totalMatches: wins + losses,
         wins,
@@ -451,37 +430,45 @@ const Player = ({ onNameUpdate }) => {
     [userId]
   );
 
-  // Считаем статистику по сторонам (левая/правая) - победы/поражения
+  // Функция для расчета статистики по сторонам с учетом очков
   const calculateSideStats = (allMatches, currentUserId) => {
     let leftSideWins = 0;
     let leftSideLosses = 0;
     let rightSideWins = 0;
     let rightSideLosses = 0;
+    let leftPointsScored = 0;
+    let leftPointsConceded = 0;
+    let rightPointsScored = 0;
+    let rightPointsConceded = 0;
 
     allMatches.forEach((match) => {
       const isPlayer1 = match.player1Id === currentUserId;
-      const playerSide = isPlayer1
-        ? match.player1.side
-        : match.player2.side;
-      const playerName = isPlayer1
-        ? match.player1.name
-        : match.player2.name;
-
+      const playerSide = isPlayer1 ? match.player1.side : match.player2.side;
+      const playerName = isPlayer1 ? match.player1.name : match.player2.name;
       const userIsWinner = match.winner === playerName;
+      const playerScore = isPlayer1
+        ? match.player1.scores
+        : match.player2.scores;
+      const opponentScore = isPlayer1
+        ? match.player2.scores
+        : match.player1.scores;
 
-      // Если игрок указывал 'left' как сторону
       if (playerSide === 'left') {
         if (userIsWinner) {
           leftSideWins++;
         } else {
           leftSideLosses++;
         }
+        leftPointsScored += playerScore;
+        leftPointsConceded += opponentScore;
       } else if (playerSide === 'right') {
         if (userIsWinner) {
           rightSideWins++;
         } else {
           rightSideLosses++;
         }
+        rightPointsScored += playerScore;
+        rightPointsConceded += opponentScore;
       }
     });
 
@@ -490,10 +477,35 @@ const Player = ({ onNameUpdate }) => {
       leftSideLosses,
       rightSideWins,
       rightSideLosses,
+      leftPointsScored,
+      leftPointsConceded,
+      rightPointsScored,
+      rightPointsConceded,
     };
   };
 
-  // При смене оппонента пересчитываем общую статистику + статистику по сторонам
+  // Новая функция для расчета комбинированных метрик (например, KD и win ratio) для каждой стороны
+  const calculateCombinedSideMetrics = (sideData) => {
+    const leftWinRatio =
+      sideData.leftSideLosses > 0
+        ? (sideData.leftSideWins / sideData.leftSideLosses).toFixed(2)
+        : sideData.leftSideWins;
+    const rightWinRatio =
+      sideData.rightSideLosses > 0
+        ? (sideData.rightSideWins / sideData.rightSideLosses).toFixed(2)
+        : sideData.rightSideWins;
+    const leftKDRatio =
+      sideData.leftPointsConceded > 0
+        ? (sideData.leftPointsScored / sideData.leftPointsConceded).toFixed(2)
+        : sideData.leftPointsScored;
+    const rightKDRatio =
+      sideData.rightPointsConceded > 0
+        ? (sideData.rightPointsScored / sideData.rightPointsConceded).toFixed(2)
+        : sideData.rightPointsScored;
+    return { leftWinRatio, rightWinRatio, leftKDRatio, rightKDRatio };
+  };
+
+  // При изменении выбранного оппонента или списка матчей пересчитываем статистику
   useEffect(() => {
     if (!filteredMatches.length) {
       setOpponentStats(null);
@@ -501,15 +513,11 @@ const Player = ({ onNameUpdate }) => {
       return;
     }
     if (selectedOpponent === '') {
-      // Все матчи
       const overallStats = calculateStats(filteredMatches);
       setOpponentStats(overallStats);
-
-      // Также считаем статистику по сторонам для всех матчей
       const sideData = calculateSideStats(filteredMatches, userId);
       setSideStats(sideData);
     } else {
-      // Фильтруем матчи конкретно по выбранному оппоненту
       const specificMatches = filteredMatches.filter((match) => {
         return (
           match.player1Id === selectedOpponent ||
@@ -518,8 +526,6 @@ const Player = ({ onNameUpdate }) => {
       });
       const stats = calculateStats(specificMatches);
       setOpponentStats(stats);
-
-      // Также считаем статистику по сторонам для этих конкретных матчей
       const sideData = calculateSideStats(specificMatches, userId);
       setSideStats(sideData);
     }
@@ -532,7 +538,7 @@ const Player = ({ onNameUpdate }) => {
   const rank = player ? getRank(player.maxRating || player.rating) : '';
   const rankExplanations = getAllRankExplanations();
 
-  // Данные для графика «Матч/победа/проигрыш»
+  // Данные для графика «Match Results»
   const getChartData = () => {
     if (!opponentStats || !filteredMatches.length) return null;
     const sorted = [...filteredMatches].sort(
@@ -540,7 +546,6 @@ const Player = ({ onNameUpdate }) => {
     );
     const dates = [];
     const results = [];
-
     sorted.forEach((match) => {
       const isWinner =
         (match.player1Id === userId && match.winner === match.player1.name) ||
@@ -548,7 +553,6 @@ const Player = ({ onNameUpdate }) => {
       dates.push(match.timestamp.split(' ')[0]);
       results.push(isWinner ? 1 : -1);
     });
-
     return {
       labels: dates,
       datasets: [
@@ -564,7 +568,7 @@ const Player = ({ onNameUpdate }) => {
     };
   };
 
-  // График «Разница в счёте»
+  // График «Score Difference»
   const getScoreDifferenceData = () => {
     if (!opponentStats || !filteredMatches.length) return null;
     const sorted = [...filteredMatches].sort(
@@ -572,7 +576,6 @@ const Player = ({ onNameUpdate }) => {
     );
     const dates = [];
     const differences = [];
-
     sorted.forEach((match) => {
       const playerScore =
         match.player1Id === userId
@@ -585,7 +588,6 @@ const Player = ({ onNameUpdate }) => {
       dates.push(match.timestamp.split(' ')[0]);
       differences.push(playerScore - opponentScore);
     });
-
     return {
       labels: dates,
       datasets: [
@@ -601,7 +603,7 @@ const Player = ({ onNameUpdate }) => {
     };
   };
 
-  // График «Рейтинг во времени»
+  // График «Rating Over Time»
   const getRatingData = () => {
     if (!opponentStats || !filteredMatches.length) return null;
     const sorted = [...filteredMatches].sort(
@@ -609,7 +611,6 @@ const Player = ({ onNameUpdate }) => {
     );
     const dates = [];
     const ratings = [];
-
     sorted.forEach((match) => {
       const rating =
         match.player1Id === userId
@@ -618,7 +619,6 @@ const Player = ({ onNameUpdate }) => {
       dates.push(match.timestamp.split(' ')[0]);
       ratings.push(rating);
     });
-
     return {
       labels: dates,
       datasets: [
@@ -634,19 +634,22 @@ const Player = ({ onNameUpdate }) => {
     };
   };
 
-  // Определяем, какой участок графика показывать (по умолчанию последние 30%)
   const calculateVisibleRange = (dataLength) => {
     const visibleStart = Math.floor(dataLength * 0.7);
     const visibleEnd = dataLength - 1;
     return { min: visibleStart, max: visibleEnd };
   };
 
+  // Вычисляем комбинированные метрики для сторон, если данные есть
+  const combinedMetrics = sideStats
+    ? calculateCombinedSideMetrics(sideStats)
+    : null;
+
   return (
     <div className='container mx-auto'>
       <h1 className='text-3xl font-outfit font-bold mb-6'>Player Profile</h1>
       <div className='bg-white shadow rounded-lg p-2 mt-4 mb-4 relative'>
         <div className='flex flex-col sm:flex-row justify-between items-start'>
-          {/* Player Info Section */}
           <div className='w-full sm:w-1/2'>
             <div className='text-2xl font-outfit font-bold mb-4 text-gray-700'>
               <span>{player ? player.name : 'Player Name'}</span>
@@ -725,8 +728,6 @@ const Player = ({ onNameUpdate }) => {
               </>
             )}
           </div>
-
-          {/* Rank Section */}
           <div className='w-full sm:w-1/2 flex justify-center sm:justify-end mt-6 sm:mt-0'>
             {rank && (
               <div
@@ -745,8 +746,6 @@ const Player = ({ onNameUpdate }) => {
             )}
           </div>
         </div>
-
-        {/* Achievements Panel Section */}
         <div className='mt-6'>
           <AchievementsPanel
             achievements={player?.achievements || []}
@@ -757,7 +756,9 @@ const Player = ({ onNameUpdate }) => {
         </div>
       </div>
 
-      <h2 className='text-2xl font-outfit font-bold mb-4'>Filter by Opponent</h2>
+      <h2 className='text-2xl font-outfit font-bold mb-4'>
+        Filter by Opponent
+      </h2>
       <select
         className='w-full md:w-1/2 bg-gray-100 text-black px-4 py-2 border border-gray-300 rounded-md mb-4'
         value={selectedOpponent}
@@ -771,7 +772,6 @@ const Player = ({ onNameUpdate }) => {
         ))}
       </select>
 
-      {/* Блок с общей статистикой (или статистикой по выбранному оппоненту) */}
       {opponentStats && (
         <>
           <div className='bg-white shadow rounded-lg p-2 mt-4 mb-4'>
@@ -843,10 +843,70 @@ const Player = ({ onNameUpdate }) => {
                 <strong>Left Side Losses:</strong> {sideStats.leftSideLosses}
               </p>
               <p className='text-gray-700'>
+                <strong>Left Side Points Scored:</strong>{' '}
+                {sideStats.leftPointsScored}
+              </p>
+              <p className='text-gray-700'>
+                <strong>Left Side Points Conceded:</strong>{' '}
+                {sideStats.leftPointsConceded}
+              </p>
+              <p className='text-gray-700'>
+                <strong>Left Side Point Differential:</strong>{' '}
+                {sideStats.leftPointsScored - sideStats.leftPointsConceded}
+              </p>
+              <hr className='my-2' />
+              <p className='text-gray-700'>
                 <strong>Right Side Wins:</strong> {sideStats.rightSideWins}
               </p>
               <p className='text-gray-700'>
                 <strong>Right Side Losses:</strong> {sideStats.rightSideLosses}
+              </p>
+              <p className='text-gray-700'>
+                <strong>Right Side Points Scored:</strong>{' '}
+                {sideStats.rightPointsScored}
+              </p>
+              <p className='text-gray-700'>
+                <strong>Right Side Points Conceded:</strong>{' '}
+                {sideStats.rightPointsConceded}
+              </p>
+              <p className='text-gray-700'>
+                <strong>Right Side Point Differential:</strong>{' '}
+                {sideStats.rightPointsScored - sideStats.rightPointsConceded}
+              </p>
+            </div>
+          )}
+
+          {sideStats && combinedMetrics && (
+            <div className='bg-white shadow rounded-lg p-2 mt-4 mb-4'>
+              <h3 className='text-xl font-outfit font-bold mb-4 text-gray-700'>
+                Combined Side Performance Metrics
+              </h3>
+              <p className='text-gray-700'>
+                <strong>Left Side Win Ratio (Wins / Losses):</strong>{' '}
+                {combinedMetrics.leftWinRatio}
+              </p>
+              <p className='text-gray-700'>
+                <strong>
+                  Left Side KD Ratio (Points Scored / Points Conceded):
+                </strong>{' '}
+                {combinedMetrics.leftKDRatio}
+              </p>
+              <p className='text-gray-700'>
+                <strong>Right Side Win Ratio (Wins / Losses):</strong>{' '}
+                {combinedMetrics.rightWinRatio}
+              </p>
+              <p className='text-gray-700'>
+                <strong>
+                  Right Side KD Ratio (Points Scored / Points Conceded):
+                </strong>{' '}
+                {combinedMetrics.rightKDRatio}
+              </p>
+              <p className='text-gray-700 mt-2'>
+                Overall, your left side performance is{' '}
+                {combinedMetrics.leftKDRatio > combinedMetrics.rightKDRatio
+                  ? 'stronger'
+                  : 'weaker'}{' '}
+                than your right side.
               </p>
             </div>
           )}
@@ -869,7 +929,8 @@ const Player = ({ onNameUpdate }) => {
                           label: (tooltipItem) => {
                             const matchIndex = tooltipItem.dataIndex;
                             const sorted = [...filteredMatches].sort(
-                              (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
+                              (a, b) =>
+                                new Date(a.timestamp) - new Date(b.timestamp)
                             );
                             const match = sorted[matchIndex];
                             return `Match Date: ${match.timestamp}`;
@@ -888,22 +949,13 @@ const Player = ({ onNameUpdate }) => {
                     scales: {
                       x: {
                         type: 'category',
-                        title: {
-                          display: true,
-                          text: 'Timeline',
-                        },
-                        ticks: {
-                          autoSkip: true,
-                          maxTicksLimit: 10,
-                        },
+                        title: { display: true, text: 'Timeline' },
+                        ticks: { autoSkip: true, maxTicksLimit: 10 },
                         ...calculateVisibleRange(filteredMatches.length),
                       },
                       y: {
                         beginAtZero: true,
-                        title: {
-                          display: true,
-                          text: 'Values',
-                        },
+                        title: { display: true, text: 'Values' },
                       },
                     },
                   }}
@@ -927,7 +979,8 @@ const Player = ({ onNameUpdate }) => {
                           label: (tooltipItem) => {
                             const matchIndex = tooltipItem.dataIndex;
                             const sorted = [...filteredMatches].sort(
-                              (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
+                              (a, b) =>
+                                new Date(a.timestamp) - new Date(b.timestamp)
                             );
                             const match = sorted[matchIndex];
                             const playerScore =
@@ -938,15 +991,11 @@ const Player = ({ onNameUpdate }) => {
                               match.player1Id === userId
                                 ? match.player2.scores
                                 : match.player1.scores;
-                            const scoreDifference = playerScore - opponentScore;
-                            const winner = match.winner;
-                            return [
-                              `Winner: ${winner}`,
-                              `Player Score: ${playerScore}`,
-                              `Opponent Score: ${opponentScore}`,
-                              `Score Difference: ${scoreDifference}`,
-                              `Date: ${match.timestamp}`,
-                            ].join('\n');
+                            return `Match Date: ${
+                              match.timestamp
+                            }\nScore: ${playerScore} - ${opponentScore}\nDifference: ${
+                              playerScore - opponentScore
+                            }`;
                           },
                         },
                       },
@@ -962,22 +1011,13 @@ const Player = ({ onNameUpdate }) => {
                     scales: {
                       x: {
                         type: 'category',
-                        title: {
-                          display: true,
-                          text: 'Timeline',
-                        },
-                        ticks: {
-                          autoSkip: true,
-                          maxTicksLimit: 10,
-                        },
+                        title: { display: true, text: 'Timeline' },
+                        ticks: { autoSkip: true, maxTicksLimit: 10 },
                         ...calculateVisibleRange(filteredMatches.length),
                       },
                       y: {
                         beginAtZero: true,
-                        title: {
-                          display: true,
-                          text: 'Values',
-                        },
+                        title: { display: true, text: 'Score Difference' },
                       },
                     },
                   }}
@@ -1001,7 +1041,8 @@ const Player = ({ onNameUpdate }) => {
                           label: (tooltipItem) => {
                             const matchIndex = tooltipItem.dataIndex;
                             const sorted = [...filteredMatches].sort(
-                              (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
+                              (a, b) =>
+                                new Date(a.timestamp) - new Date(b.timestamp)
                             );
                             const match = sorted[matchIndex];
                             const oldRating =
@@ -1013,16 +1054,13 @@ const Player = ({ onNameUpdate }) => {
                                 ? match.player1.newRating
                                 : match.player2.newRating;
                             const ratingChange = newRating - oldRating;
-                            return [
-                              `Old Rating: ${oldRating}`,
-                              `New Rating: ${newRating}`,
-                              `Change: ${
-                                ratingChange > 0
-                                  ? '+' + ratingChange
-                                  : ratingChange
-                              }`,
-                              `Date: ${match.timestamp}`,
-                            ].join('\n');
+                            return `Match Date: ${
+                              match.timestamp
+                            }\nOld Rating: ${oldRating}\nNew Rating: ${newRating}\nChange: ${
+                              ratingChange > 0
+                                ? '+' + ratingChange
+                                : ratingChange
+                            }`;
                           },
                         },
                       },
@@ -1038,22 +1076,13 @@ const Player = ({ onNameUpdate }) => {
                     scales: {
                       x: {
                         type: 'category',
-                        title: {
-                          display: true,
-                          text: 'Timeline',
-                        },
-                        ticks: {
-                          autoSkip: true,
-                          maxTicksLimit: 10,
-                        },
+                        title: { display: true, text: 'Timeline' },
+                        ticks: { autoSkip: true, maxTicksLimit: 10 },
                         ...calculateVisibleRange(filteredMatches.length),
                       },
                       y: {
                         beginAtZero: true,
-                        title: {
-                          display: true,
-                          text: 'Values',
-                        },
+                        title: { display: true, text: 'Rating' },
                       },
                     },
                   }}
