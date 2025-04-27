@@ -10,6 +10,8 @@ import Register from './components/registration/Register';
 import CreateRoom from './components/rooms/CreateRoom';
 import Room from './components/rooms/Room';
 import RoomList from './components/rooms/RoomList';
+import TournamentRoom from './components/rooms/TournamentRoom'; // We'll create this
+import TournamentRoomList from './components/rooms/TournamentRoomList'; // We'll create this
 import WelcomePage from './components/WelcomePage';
 import { auth, db } from './firebase';
 
@@ -75,6 +77,9 @@ function App() {
                       currentUserId={currentUser?.uid}
                     />
                   </div>
+                  <div className='w-full mt-4'>
+                    <TournamentRoomList currentUserId={currentUser?.uid} />
+                  </div>
                   <div className='w-full mt-8'>
                     <PlayersTable />
                   </div>
@@ -87,9 +92,11 @@ function App() {
           <Route path='/player/:userId' element={<Player />} />
           <Route path='/login' element={<Login />} />
           <Route path='/register' element={<Register />} />
-          <Route path='forgot-password' element={<ResetPassword />} />
+          <Route path='/forgot-password' element={<ResetPassword />} />
           <Route path='/create-room' element={<CreateRoom />} />
           <Route path='/rooms/:roomId' element={<Room />} />
+          {/* New route for Tournaments */}
+          <Route path='/tournaments/:tournamentId' element={<TournamentRoom />} />
         </Routes>
       </div>
     </div>
