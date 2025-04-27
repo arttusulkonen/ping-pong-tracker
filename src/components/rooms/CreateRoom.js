@@ -1,7 +1,7 @@
 import React from 'react';
 
 import Modal from '../Modal';
-import AddRoomForm from './AddRoomForm';
+import AddRoomOrTournamentForm from './AddRoomOrTournamentForm';
 
 const CreateRoom = ({ currentUser, handleOpenModal, handleCloseModal, showModal }) => {
   return (
@@ -16,7 +16,7 @@ const CreateRoom = ({ currentUser, handleOpenModal, handleCloseModal, showModal 
         </button>
       </div>
       <Modal show={showModal} onClose={handleCloseModal}>
-        <AddRoomForm currentUser={currentUser} onClose={handleCloseModal} />
+        <AddRoomOrTournamentForm currentUser={currentUser} onClose={handleCloseModal} />
       </Modal>
     </div>
   );
