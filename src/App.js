@@ -56,7 +56,7 @@ function App() {
       <ReactNotifications />
 
       {/* --- Announcement overlay --- */}
-      {showModal && <Announcement onClose={handleCloseModal} />}
+      {showModal && <Announcement />}
 
       <div className='max-w-screen-xl w-full px-4 py-8'>
         <Routes>
