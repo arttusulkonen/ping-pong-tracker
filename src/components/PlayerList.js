@@ -423,7 +423,7 @@ const PlayerList = ({ currentUserId, players, loading, userRole, roomId }) => {
   return (
     <div
       className='flex flex-col'
-      style={{ zIndex: 999, position: 'relative' }}
+      style={{ zIndex: 10, position: 'relative' }}
     >
       <div className='mb-4 flex space-x-2'>
         <button
